@@ -20,6 +20,7 @@ async function main() {
       avgTicketPrice: 300,
       conversationLimit: 300,
       plan: "standard",
+      subscriptionStatus: "active",
       routingMode: "round_robin",
       businessHours: {
         mon: { open: "7:00 AM", close: "6:00 PM" },

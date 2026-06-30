@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/cron/weekly-report", "schedule": "0 14 * * 1" },
+    { "path": "/api/cron/overage-billing", "schedule": "0 6 1 * *" }
+  ]
+}

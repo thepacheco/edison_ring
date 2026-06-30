@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { currentMonth } from "./usage";
+import { subscriptionCost as planSubscriptionCost } from "./pricing";
 
 export interface RecentLead {
   id: string;
@@ -25,15 +26,6 @@ export interface DashboardData {
   demo: boolean; // true when the DB is unavailable and we're showing sample data
 }
 
-/** Per-location list price tiers from the build spec. */
-function subscriptionCostForLocations(locationCount: number): number {
-  const n = Math.max(1, locationCount);
-  if (n === 1) return 79;
-  if (n <= 4) return n * 69;
-  if (n <= 9) return n * 59;
-  return n * 59; // 10+ is a custom quote; approximate for the tracker
-}
-
 function initialsOf(nameOrPhone: string): string {
   const parts = nameOrPhone.trim().split(/\s+/);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -44,14 +36,14 @@ function initialsOf(nameOrPhone: string): string {
 const DEMO: DashboardData = {
   businessName: "Rivera Comfort HVAC",
   recoveredThisMonth: 4200,
-  subscriptionCost: 299,
+  subscriptionCost: 79,
   jobsBooked: 14,
   avgTicket: 300,
   conversationsUsed: 247,
   conversationLimit: 300,
   needsFollowup: 4,
   paidForItself: true,
-  returnMultiple: 14.1,
+  returnMultiple: 53.2,
   demo: true,
   recentLeads: [
     {
@@ -130,7 +122,8 @@ export async function getDashboardData(): Promise<DashboardData> {
       (sum, c) => sum + (c.estimatedValue ? Number(c.estimatedValue) : avgTicket),
       0,
     );
-    const subscriptionCost = subscriptionCostForLocations(
+    const subscriptionCost = planSubscriptionCost(
+      business.plan,
       business.locations.length,
     );
 

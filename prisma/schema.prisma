@@ -14,6 +14,7 @@ model Business {
   id                String   @id @default(cuid())
   name              String
   ownerEmail        String   @unique
+  passwordHash      String? // simple credentials auth (scrypt)
   phoneNumber       String // their forwarded business line
   twilioNumber      String   @unique // the Edison-provisioned number
   carrier           String?
@@ -24,10 +25,23 @@ model Business {
   aiToneSettings    Json? // custom prompt tweaks + greeting override
   routingMode       String   @default("always_to_owner") // always_to_owner | round_robin | keyword
   plan              String   @default("founding") // founding | standard | high_volume
-  stripeCustomerId  String?
-  stripeSubId       String?
   conversationLimit Int      @default(300)
-  createdAt         DateTime @default(now())
+
+  // Billing (Stripe)
+  stripeCustomerId   String?
+  stripeSubId        String?
+  subscriptionStatus String    @default("none") // none | trialing | active | past_due | canceled
+  trialEndsAt        DateTime?
+  canceledAt         DateTime?
+  cancelReason       String?
+  foundingLockedAt   DateTime? // founding price locked-for-life timestamp
+  flaggedForReview   Boolean   @default(false) // hard-cap breach → manual review
+
+  // Calendar (Google)
+  googleRefreshToken String?
+  googleCalendarId   String? @default("primary")
+
+  createdAt DateTime @default(now())
 
   locations     Location[]
   conversations Conversation[]
@@ -93,6 +107,9 @@ model Message {
   direction      String // inbound | outbound
   body           String
   twilioSid      String? // Twilio message SID for delivery tracking
+  inputTokens    Int? // AI-generated outbound: tokens in, for real COGS
+  outputTokens   Int? // AI-generated outbound: tokens out
+  modelUsed      String? // e.g. "claude-haiku-4-5"
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])

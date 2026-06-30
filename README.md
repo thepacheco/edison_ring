@@ -9,27 +9,64 @@ calendar. Next.js (App Router) + Postgres/Prisma + Twilio + Anthropic.
 > dashboard implements the design's **"Focus"** direction (money-first ROI
 > tracker).
 
-## Status — Day 1 complete
+## What's built
 
-Day 1 of the 3-day build plan:
+The customer touchpoint is **SMS only** — no chat widget, no app. The owner
+dashboard is a **read-only viewer** of the text thread; to reply directly the
+owner texts from their own phone. The conversation engine defaults to **Claude
+Haiku** (cheapest tier), set via `CLAUDE_MODEL_ID`.
 
-- **Prisma schema + DB setup** — `Business`, `Location`, `Worker`,
-  `Conversation`, `Message`, `UsageRecord` (`prisma/schema.prisma`).
-- **Twilio Voice webhook** — missed-call detection → creates a `Conversation`
-  and sends the initial auto-text (`src/app/api/webhooks/twilio/voice`).
-- **Twilio SMS webhook** — inbound messages → logged and handed to the AI engine
-  (`src/app/api/webhooks/twilio/sms`).
-- **Claude conversation engine** — system prompt built from business type, tone,
-  hours, and worker availability; a forced `respond_to_customer` tool call
-  (`strict: true`) returns the reply text **and** structured triage (intent,
-  need summary, customer name, booking signal) in one request. Escalates to a
-  human after 2 unresolved exchanges (`src/lib/conversation.ts`).
-- **Owner dashboard** — "paid for itself" tracker, usage counter, recent leads
-  (`src/app/page.tsx`); renders sample data until the DB is wired up.
+**Day 1 — capture**
+- Prisma schema: `Business`, `Location`, `Worker`, `Conversation`, `Message`
+  (with `inputTokens`/`outputTokens`/`modelUsed` for real COGS), `UsageRecord`.
+- Twilio Voice webhook → missed-call detection, creates a `Conversation`, sends
+  the auto-text, and passes the live setup test on first missed call.
+- Twilio SMS webhook → logs inbound, runs the AI engine, sends the reply.
+- Claude engine (`src/lib/conversation.ts`): system prompt from business
+  type/tone/hours/workers; forced `respond_to_customer` tool call (`strict:true`)
+  returning reply text + intent + need + booking signal in one request; token
+  usage logged per call; human escalation after 2 unresolved exchanges.
 
-Day 2 (calendar booking, setup wizard, Stripe, settings, full routing UI) and
-Day 3 (multi-location, weekly report cron, overage billing, landing page) are
-scoped in the build spec but not yet implemented.
+**Day 2 — book, sell, configure**
+- Google Calendar OAuth + booking: Edison pulls real open slots into the SMS
+  conversation and creates the event on confirmation (`src/lib/google.ts`).
+- Owner dashboard ("Focus" design): paid-for-itself tracker, usage counter,
+  recent leads. Conversation list + read-only transcript viewer.
+- Setup wizard: carrier dropdown → forwarding code (copy + tap-to-call) → live
+  test that flips green when the webhook fires, with a troubleshooting branch.
+- Stripe: card-required checkout, 14-day trial, subscription webhooks
+  (created/updated/canceled, payment succeeded/failed) syncing `Business` state.
+- Worker routing (always-to-owner / round-robin / keyword + call-out backup) and
+  a settings panel (hours, routing, avg ticket, auto-text wording, worker out).
+
+**Day 3 — scale, bill, monitor**
+- Multi-location pricing tiers ($79 / $69 / $59 per location) on the billing page.
+- Weekly value report cron → aggregates 7 days + emails a screenshot-friendly
+  summary via Resend (`/api/cron/weekly-report`).
+- Overage billing cron → pushes per-conversation overage to Stripe metered
+  billing; hard-caps at 1,000/mo and flags for review (`/api/cron/overage-billing`).
+- Admin/CEO cockpit (`/admin`): MRR, subscribers by plan, trials, conversion,
+  churn, platform conversations, real-time estimated COGS + margin, near-limit
+  and failed-payment watchlists.
+- Marketing landing page (`/`).
+
+### Pricing
+
+| Plan | $/mo | Included | Overage |
+|---|---|---|---|
+| Founding (first 90 days, locked for life) | $49 | 300 | $0.15/conv |
+| Standard | $79 | 300 | $0.15/conv |
+| High-volume | $99 | 600 | $0.15/conv |
+
+Hard cap: 1,000 conversations/mo, then auto-billing is blocked and the account
+is flagged for manual review.
+
+### What needs external setup to go live
+
+Functional but gated on credentials/config you supply: Stripe products/prices &
+webhook secret, Google OAuth consent + secret, Resend API key, per-business
+Twilio number provisioning, a real Postgres `DATABASE_URL`, and `ADMIN_PASSWORD`
+/ `CRON_SECRET`. Everything degrades gracefully when a key is absent.
 
 ## Architecture
 

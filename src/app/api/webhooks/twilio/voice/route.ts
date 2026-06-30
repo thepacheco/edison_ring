@@ -45,6 +45,15 @@ export async function POST(req: Request) {
     return twiml("<Response><Hangup/></Response>");
   }
 
+  // A missed call reaching us proves call-forwarding is wired up correctly, so
+  // the setup wizard's live test passes the first time Edison receives one.
+  if (!business.setupCompleted) {
+    await prisma.business.update({
+      where: { id: business.id },
+      data: { setupCompleted: true },
+    });
+  }
+
   // Reuse an open conversation for this caller if one exists, else create one.
   let conversation = await prisma.conversation.findFirst({
     where: {

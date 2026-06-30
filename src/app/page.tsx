@@ -1,471 +1,407 @@
-import { getDashboardData, type RecentLead } from "@/lib/dashboard";
-import { MoneyCounter } from "@/components/MoneyCounter";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_STYLE: Record<
-  string,
-  { label: string; color: string; bg: string }
-> = {
-  booked: { label: "Booked", color: "#0a7d54", bg: "#e6f6ef" },
-  needs_followup: { label: "Follow up", color: "#a86400", bg: "#fdf3e2" },
-  new: { label: "New", color: "#5b46f9", bg: "#eceaff" },
-  closed: { label: "Closed", color: "#5b6475", bg: "#f0f1f5" },
-};
-
-export default async function DashboardPage() {
-  const d = await getDashboardData();
-  const usagePct = Math.min(
-    100,
-    Math.round((d.conversationsUsed / d.conversationLimit) * 100),
-  );
-
+export default function LandingPage() {
   return (
-    <main style={{ minHeight: "100vh", background: "var(--bg)" }}>
-      {/* top nav */}
+    <main style={{ background: "#fff", color: "var(--ink)" }}>
+      {/* nav */}
       <header
         style={{
-          height: 60,
+          height: 66,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 28px",
-          background: "#fff",
+          padding: "0 24px",
           borderBottom: "1px solid var(--line-soft)",
+          maxWidth: 1120,
+          margin: "0 auto",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <div
-              className="mono"
-              style={{
-                width: 27,
-                height: 27,
-                borderRadius: 7,
-                background: "var(--indigo)",
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: 15,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              E
-            </div>
-            <span
-              style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-.02em" }}
-            >
-              Edison
-            </span>
-          </div>
-          <nav style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span
-              style={{
-                fontSize: 13.5,
-                fontWeight: 600,
-                background: "#f2f1fe",
-                padding: "7px 13px",
-                borderRadius: 8,
-              }}
-            >
-              Home
-            </span>
-            {["Conversations", "Reports", "Settings"].map((l) => (
-              <span
-                key={l}
-                style={{ fontSize: 13.5, color: "var(--muted)", padding: "7px 13px" }}
-              >
-                {l}
-              </span>
-            ))}
-          </nav>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <div
+            className="mono"
             style={{
+              width: 28,
+              height: 28,
+              borderRadius: 7,
+              background: "var(--indigo)",
+              color: "#fff",
+              fontWeight: 800,
+              fontSize: 15,
               display: "flex",
               alignItems: "center",
-              gap: 8,
-              border: "1px solid var(--line)",
-              borderRadius: 8,
-              padding: "7px 12px",
+              justifyContent: "center",
+            }}
+          >
+            E
+          </div>
+          <span style={{ fontWeight: 800, fontSize: 18, letterSpacing: "-.02em" }}>
+            Edison
+          </span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 22,
+            fontSize: 14,
+            color: "var(--muted)",
+            fontWeight: 500,
+          }}
+        >
+          <Link href="/login">Log in</Link>
+          <Link
+            href="/signup"
+            style={{
+              background: "var(--ink)",
+              color: "#fff",
+              padding: "9px 16px",
+              borderRadius: 9,
+              fontWeight: 600,
+            }}
+          >
+            Start free trial
+          </Link>
+        </div>
+      </header>
+
+      {/* hero */}
+      <section
+        style={{
+          maxWidth: 1120,
+          margin: "0 auto",
+          display: "flex",
+          gap: 48,
+          padding: "64px 24px 56px",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <div
+          style={{
+            flex: "1 1 440px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 22,
+          }}
+        >
+          <div
+            style={{
+              alignSelf: "flex-start",
+              background: "#f2f1fe",
+              color: "#4032c9",
+              borderRadius: 30,
+              padding: "7px 14px",
               fontSize: 13,
               fontWeight: 600,
             }}
           >
-            All locations
-            <span style={{ color: "var(--faint)", fontSize: 11 }}>▾</span>
+            For HVAC, plumbing, electrical &amp; auto shops
           </div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 52,
+              lineHeight: 1.04,
+              letterSpacing: "-.035em",
+              fontWeight: 800,
+            }}
+          >
+            Stop losing jobs to voicemail.
+          </h1>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 19,
+              lineHeight: 1.55,
+              color: "var(--muted)",
+              maxWidth: 480,
+            }}
+          >
+            A missed call is a missed job — worth{" "}
+            <b style={{ color: "var(--ink)" }}>$300 on average</b>. When you
+            can&apos;t pick up, Edison instantly texts the caller, books them,
+            and puts it on your calendar.
+          </p>
           <div
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: "var(--ink)",
-              color: "#fff",
-              fontSize: 11,
-              fontWeight: 700,
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              gap: 14,
+              marginTop: 4,
+              flexWrap: "wrap",
             }}
           >
-            {d.businessName
-              .split(/\s+/)
-              .slice(0, 2)
-              .map((w) => w[0])
-              .join("")
-              .toUpperCase()}
+            <Link
+              href="/signup"
+              style={{
+                background: "var(--indigo)",
+                color: "#fff",
+                padding: "15px 26px",
+                borderRadius: 12,
+                fontSize: 16,
+                fontWeight: 700,
+                boxShadow: "0 12px 26px -10px rgba(91,70,249,.6)",
+              }}
+            >
+              Start free 14-day trial
+            </Link>
+            <span style={{ fontSize: 13.5, color: "var(--faint)" }}>
+              No app to install · 5-min setup
+            </span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 20,
+              marginTop: 10,
+              fontSize: 13,
+              color: "var(--faint)",
+              fontWeight: 500,
+              flexWrap: "wrap",
+            }}
+          >
+            <span>✓ Works with your current number</span>
+            <span>✓ Cancel anytime</span>
           </div>
         </div>
-      </header>
 
-      <div
+        {/* phone demo */}
+        <div style={{ flex: "1 1 300px", display: "flex", justifyContent: "center" }}>
+          <PhoneDemo />
+        </div>
+      </section>
+
+      {/* math strip */}
+      <section
         style={{
-          padding: "34px 28px 64px",
+          background: "var(--ink)",
+          padding: "40px 24px",
           display: "flex",
-          flexDirection: "column",
-          gap: 22,
-          alignItems: "center",
+          justifyContent: "center",
+          gap: 56,
+          flexWrap: "wrap",
         }}
       >
-        {d.demo && (
+        {[
+          { n: "62%", c: "#fff", t: "of callers never leave a voicemail — they call the next shop" },
+          { n: "$300", c: "#fff", t: "average value of a single service job you'd otherwise lose" },
+          { n: "<10s", c: "#7c6cff", t: "for Edison to text back before they move on" },
+        ].map((s) => (
           <div
-            className="mono"
+            key={s.n}
             style={{
-              fontSize: 11.5,
-              color: "var(--amber)",
-              background: "var(--amber-soft)",
-              border: "1px solid #f3e0bd",
-              borderRadius: 8,
-              padding: "6px 12px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+              alignItems: "center",
             }}
           >
-            sample data — connect DATABASE_URL and run a missed-call test to see
-            live numbers
+            <span
+              className="mono"
+              style={{ fontWeight: 700, fontSize: 36, color: s.c }}
+            >
+              {s.n}
+            </span>
+            <span
+              style={{
+                fontSize: 13,
+                color: "#9aa3b2",
+                textAlign: "center",
+                maxWidth: 170,
+              }}
+            >
+              {s.t}
+            </span>
           </div>
-        )}
+        ))}
+      </section>
 
-        {/* centerpiece — paid for itself tracker */}
-        <section
+      {/* closing CTA */}
+      <section
+        style={{
+          padding: "56px 24px 72px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 16,
+        }}
+      >
+        <h2
           style={{
-            width: "100%",
-            maxWidth: 760,
-            background: "#fff",
-            border: "1px solid var(--line)",
-            borderRadius: 20,
-            boxShadow: "0 18px 44px -28px rgba(91,70,249,.35)",
-            padding: "38px 40px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 14,
+            margin: 0,
+            fontSize: 28,
+            fontWeight: 800,
+            letterSpacing: "-.02em",
             textAlign: "center",
           }}
         >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: d.paidForItself ? "var(--green-soft)" : "#f0f1f5",
-              color: d.paidForItself ? "var(--green)" : "var(--muted)",
-              borderRadius: 30,
-              padding: "7px 15px",
-              fontSize: 13,
-              fontWeight: 700,
-            }}
-          >
-            {d.paidForItself
-              ? "✓ Paid for itself this month"
-              : "On its way to paying for itself"}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <span style={{ fontSize: 14, color: "var(--faint)", fontWeight: 600 }}>
-              Edison recovered for you this month
-            </span>
-            <MoneyCounter
-              target={d.recoveredThisMonth}
-              className="mono"
-              style={{
-                fontWeight: 700,
-                fontSize: 74,
-                letterSpacing: "-.03em",
-                lineHeight: 1,
-                color: "var(--green)",
-              }}
-            />
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              flexWrap: "wrap",
-              justifyContent: "center",
-              fontSize: 14,
-              color: "var(--muted)",
-            }}
-          >
-            <span>
-              <b className="mono" style={{ color: "var(--ink)" }}>
-                {d.jobsBooked}
-              </b>{" "}
-              jobs booked
-            </span>
-            <span style={{ color: "#d4d7de" }}>×</span>
-            <span>
-              <b className="mono" style={{ color: "var(--ink)" }}>
-                ${d.avgTicket}
-              </b>{" "}
-              avg ticket
-            </span>
-            <span style={{ color: "#d4d7de" }}>·</span>
-            <span>
-              Edison costs{" "}
-              <b className="mono" style={{ color: "var(--ink)" }}>
-                ${d.subscriptionCost}
-              </b>
-            </span>
-          </div>
-          <div
-            style={{
-              width: "100%",
-              maxWidth: 440,
-              marginTop: 6,
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-            }}
-          >
-            <div
-              style={{
-                height: 8,
-                borderRadius: 6,
-                background: "#eef0f4",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  background: "linear-gradient(90deg,#5b46f9,#0f9d6b)",
-                  borderRadius: 6,
-                }}
-              />
-            </div>
-            <div
-              className="mono"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: 11,
-                color: "var(--faint)",
-              }}
-            >
-              <span>$0</span>
-              <span>{d.returnMultiple}× your subscription</span>
-            </div>
-          </div>
-        </section>
-
-        {/* stat strip */}
-        <section
+          Your next missed call doesn&apos;t have to be a lost job.
+        </h2>
+        <Link
+          href="/signup"
           style={{
-            width: "100%",
-            maxWidth: 760,
-            display: "flex",
-            gap: 14,
-            flexWrap: "wrap",
+            background: "var(--indigo)",
+            color: "#fff",
+            padding: "15px 28px",
+            borderRadius: 12,
+            fontSize: 16,
+            fontWeight: 700,
+            boxShadow: "0 12px 26px -10px rgba(91,70,249,.6)",
           }}
         >
-          <StatCard label="Conversations">
-            <span className="mono" style={{ fontWeight: 700, fontSize: 22 }}>
-              {d.conversationsUsed}
-              <span style={{ color: "#aeb4c0", fontSize: 15 }}>
-                {" "}
-                / {d.conversationLimit}
-              </span>
-            </span>
-            <div
-              style={{
-                height: 5,
-                borderRadius: 4,
-                background: "#eceef3",
-                overflow: "hidden",
-                marginTop: 8,
-              }}
-            >
-              <div
-                style={{
-                  width: `${usagePct}%`,
-                  height: "100%",
-                  background: "var(--indigo)",
-                  borderRadius: 4,
-                }}
-              />
-            </div>
-          </StatCard>
-          <StatCard label="Booked jobs">
-            <span className="mono" style={{ fontWeight: 700, fontSize: 22 }}>
-              {d.jobsBooked}
-            </span>
-          </StatCard>
-          <StatCard label="Needs follow-up">
-            <span
-              className="mono"
-              style={{ fontWeight: 700, fontSize: 22, color: "var(--amber)" }}
-            >
-              {d.needsFollowup}
-            </span>
-          </StatCard>
-        </section>
-
-        {/* recent leads */}
-        <section
-          style={{
-            width: "100%",
-            maxWidth: 760,
-            background: "#fff",
-            border: "1px solid var(--line)",
-            borderRadius: 16,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "16px 20px",
-              borderBottom: "1px solid var(--line-soft)",
-            }}
-          >
-            <span style={{ fontWeight: 700, fontSize: 15 }}>Recent leads</span>
-            <span
-              style={{ fontSize: 13, color: "var(--indigo)", fontWeight: 600 }}
-            >
-              View all →
-            </span>
-          </div>
-          {d.recentLeads.length === 0 && (
-            <div
-              style={{ padding: "28px 20px", color: "var(--faint)", fontSize: 14 }}
-            >
-              No leads yet. When a call goes unanswered, Edison will text the
-              caller and the conversation will show up here.
-            </div>
-          )}
-          {d.recentLeads.map((lead, i) => (
-            <LeadRow
-              key={lead.id}
-              lead={lead}
-              last={i === d.recentLeads.length - 1}
-            />
-          ))}
-        </section>
-      </div>
+          Start free 14-day trial
+        </Link>
+      </section>
     </main>
   );
 }
 
-function StatCard({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function PhoneDemo() {
+  const bubbleBase: React.CSSProperties = {
+    maxWidth: "80%",
+    padding: "10px 13px",
+    fontSize: 13.5,
+    lineHeight: 1.45,
+  };
   return (
     <div
       style={{
-        flex: "1 1 200px",
-        background: "#fff",
-        border: "1px solid var(--line)",
-        borderRadius: 14,
-        padding: "16px 18px",
+        width: 300,
+        borderRadius: 40,
+        padding: 10,
+        background: "var(--ink)",
+        boxShadow: "0 40px 80px -30px rgba(20,24,33,.5)",
       }}
     >
       <div
         style={{
-          fontSize: 12,
-          color: "var(--faint)",
-          fontWeight: 600,
-          marginBottom: 5,
-        }}
-      >
-        {label}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function LeadRow({ lead, last }: { lead: RecentLead; last: boolean }) {
-  const s = STATUS_STYLE[lead.status] ?? STATUS_STYLE.new;
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-        padding: "15px 20px",
-        borderBottom: last ? "none" : "1px solid #f4f5f8",
-      }}
-    >
-      <div
-        style={{
-          width: 38,
-          height: 38,
-          flex: "none",
-          borderRadius: "50%",
-          background: s.bg,
-          color: s.color,
-          fontSize: 13,
-          fontWeight: 700,
+          borderRadius: 31,
+          overflow: "hidden",
+          background: "#eef0f4",
+          height: 540,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          flexDirection: "column",
         }}
       >
-        {lead.initials}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 600 }}>{lead.name}</div>
         <div
           style={{
-            fontSize: 13,
-            color: "var(--faint)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            background: "#fff",
+            borderBottom: "1px solid var(--line-soft)",
+            padding: "14px 18px 12px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
           }}
         >
-          {lead.summary}
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              background: "var(--indigo-soft)",
+              color: "var(--indigo)",
+              fontWeight: 700,
+              fontSize: 13,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            RC
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>Rivera Comfort HVAC</div>
+            <div style={{ fontSize: 11, color: "var(--green-bright)", fontWeight: 600 }}>
+              ● replies in seconds
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            flex: 1,
+            padding: "16px 14px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              alignSelf: "center",
+              fontSize: 11,
+              color: "var(--faint)",
+              background: "#fff",
+              borderRadius: 20,
+              padding: "4px 11px",
+            }}
+          >
+            Missed call · 2:41 PM
+          </div>
+          <div
+            style={{
+              ...bubbleBase,
+              alignSelf: "flex-start",
+              background: "#fff",
+              borderRadius: "16px 16px 16px 5px",
+              boxShadow: "0 1px 3px rgba(20,24,33,.06)",
+            }}
+          >
+            Hi, this is Edison with Rivera Comfort 👋 Sorry we missed you! What
+            can we help with?
+          </div>
+          <div
+            style={{
+              ...bubbleBase,
+              alignSelf: "flex-end",
+              background: "var(--indigo)",
+              color: "#fff",
+              borderRadius: "16px 16px 5px 16px",
+            }}
+          >
+            AC stopped cooling upstairs, pretty hot in here
+          </div>
+          <div
+            style={{
+              ...bubbleBase,
+              alignSelf: "flex-start",
+              background: "#fff",
+              borderRadius: "16px 16px 16px 5px",
+              boxShadow: "0 1px 3px rgba(20,24,33,.06)",
+            }}
+          >
+            Got it. We can come <b>today between 4–6 PM</b>. Want me to lock that
+            in?
+          </div>
+          <div
+            style={{
+              ...bubbleBase,
+              alignSelf: "flex-end",
+              background: "var(--indigo)",
+              color: "#fff",
+              borderRadius: "16px 16px 5px 16px",
+            }}
+          >
+            Yes please!
+          </div>
+          <div
+            style={{
+              ...bubbleBase,
+              maxWidth: "85%",
+              alignSelf: "flex-start",
+              background: "var(--green-soft)",
+              border: "1px solid #c4e9d7",
+              borderRadius: 14,
+              color: "var(--green)",
+              fontWeight: 600,
+            }}
+          >
+            ✓ Booked for today, 4–6 PM. Added to your calendar.
+          </div>
         </div>
       </div>
-      {lead.value != null && (
-        <span
-          className="mono"
-          style={{ fontSize: 13, fontWeight: 700, color: s.color }}
-        >
-          ${lead.value}
-        </span>
-      )}
-      <span
-        style={{
-          fontSize: 12,
-          fontWeight: 700,
-          color: s.color,
-          background: s.bg,
-          borderRadius: 20,
-          padding: "4px 11px",
-        }}
-      >
-        {s.label}
-      </span>
     </div>
   );
 }
