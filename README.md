@@ -1,25 +1,83 @@
-# CODING AGENTS: READ THIS FIRST
+# Edison — Missed Call Rescue
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+When a local service business misses a call, Edison auto-texts the caller, has an
+AI conversation (Claude) to understand their need, and books them on the
+calendar. Next.js (App Router) + Postgres/Prisma + Twilio + Anthropic.
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+> The original Claude Design handoff bundle (brief, chat transcript, HTML
+> mockups) lives in [`chats/`](./chats) and [`project/`](./project). The app's
+> dashboard implements the design's **"Focus"** direction (money-first ROI
+> tracker).
 
-## What you should do — IMPORTANT
+## Status — Day 1 complete
 
-**Read the chat transcripts first.** There are 1 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+Day 1 of the 3-day build plan:
 
-**Read `project/Edison.dc.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+- **Prisma schema + DB setup** — `Business`, `Location`, `Worker`,
+  `Conversation`, `Message`, `UsageRecord` (`prisma/schema.prisma`).
+- **Twilio Voice webhook** — missed-call detection → creates a `Conversation`
+  and sends the initial auto-text (`src/app/api/webhooks/twilio/voice`).
+- **Twilio SMS webhook** — inbound messages → logged and handed to the AI engine
+  (`src/app/api/webhooks/twilio/sms`).
+- **Claude conversation engine** — system prompt built from business type, tone,
+  hours, and worker availability; a forced `respond_to_customer` tool call
+  (`strict: true`) returns the reply text **and** structured triage (intent,
+  need summary, customer name, booking signal) in one request. Escalates to a
+  human after 2 unresolved exchanges (`src/lib/conversation.ts`).
+- **Owner dashboard** — "paid for itself" tracker, usage counter, recent leads
+  (`src/app/page.tsx`); renders sample data until the DB is wired up.
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+Day 2 (calendar booking, setup wizard, Stripe, settings, full routing UI) and
+Day 3 (multi-location, weekly report cron, overage billing, landing page) are
+scoped in the build spec but not yet implemented.
 
-## About the design files
+## Architecture
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+```
+Missed call ─▶ Twilio Voice webhook ─▶ create Conversation + send greeting SMS
+Customer text ─▶ Twilio SMS webhook ─▶ log inbound ─▶ Claude engine ─▶ send reply
+                                                          │
+                                            structured triage → Conversation
+                                                          │
+                                            worker routing (round-robin / keyword)
+```
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+- `src/lib/conversation.ts` — the Claude engine (system prompt, forced tool
+  call, escalation, persistence, SMS send).
+- `src/lib/routing.ts` — worker assignment (always-to-owner / round-robin /
+  keyword + call-out backup).
+- `src/lib/usage.ts` — per-month conversation + overage counting.
+- `src/lib/dashboard.ts` — dashboard metrics (with sample-data fallback).
 
-## Bundle contents
+## Setup
 
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `Edison — Missed Call Rescue` project files (HTML prototypes, assets, components)
+```bash
+npm install
+cp .env.example .env.local      # fill in real values (see below)
+npm run db:push                 # create tables (needs a reachable Postgres)
+npm run db:seed                 # seed one demo business + workers
+npm run dev                     # http://localhost:3000
+```
+
+### Environment variables
+
+See `.env.example`. Required for Day 1: `DATABASE_URL`, `ANTHROPIC_API_KEY`,
+`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`.
+
+`.env.local` is gitignored — **never commit real secrets.** Set
+`TWILIO_SKIP_SIGNATURE_VALIDATION=true` only for local dev without a public URL.
+
+### Wiring up Twilio
+
+Point your Edison number's webhooks at the deployed app:
+
+- Voice (missed call): `POST {APP_BASE_URL}/api/webhooks/twilio/voice`
+- Messaging (inbound SMS): `POST {APP_BASE_URL}/api/webhooks/twilio/sms`
+
+The `Business.twilioNumber` must match the Edison number Twilio dials/sends to.
+
+## Notes
+
+- Model: `claude-opus-4-8` via the official `@anthropic-ai/sdk`.
+- Carrier forwarding codes, per-vertical ticket prices, and live Stripe products
+  are owner-supplied content (Day 2+), not generated by the app.
