@@ -137,6 +137,7 @@ Start here depending on what you're doing:
 
 | I want to… | Read |
 |---|---|
+| **Understand how it all works** (texting flow, AI vs. human, code map, test→live) | [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) |
 | Run the app on my machine from a fresh `git clone` | [`docs/RUN_FROM_SCRATCH.md`](docs/RUN_FROM_SCRATCH.md) |
 | Set up a test database + test account and try it end-to-end | [`docs/TESTING.md`](docs/TESTING.md) |
 | Test it on my own cell phone and review the website | [`docs/TESTING.md`](docs/TESTING.md#4-tester-run-on-your-cell-phone) |
