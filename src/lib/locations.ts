@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { currentMonth } from "./usage";
+import { getCurrentBusiness } from "./auth";
 import type { Business } from "@prisma/client";
 
 /**
@@ -53,31 +54,72 @@ const DEMO: LocationsData = {
 
 export async function getLocationsData(): Promise<LocationsData> {
   try {
-    const business = await prisma.business.findFirst();
+    const business = await getCurrentBusiness();
     if (!business) return DEMO;
-    const locations = await prisma.location.findMany({
+    let locations = await prisma.location.findMany({
       where: { businessId: business.id },
       orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
     });
-    if (locations.length === 0) return { locations: [], combined: { leads: 0, booked: 0, recovered: 0 }, demo: false };
+
+    // Legacy businesses created before primary-location auto-creation have no
+    // primary row — synthesize one from the business's own number so the page
+    // isn't empty and main-line conversations are still attributed.
+    if (!locations.some((l) => l.isPrimary)) {
+      locations = [
+        {
+          id: "__primary__",
+          businessId: business.id,
+          name: business.name,
+          phoneNumber: business.phoneNumber,
+          twilioNumber: business.twilioNumber,
+          isPrimary: true,
+          address: null,
+          latitude: null,
+          longitude: null,
+          active: true,
+          createdAt: business.createdAt,
+        },
+        ...locations,
+      ];
+    }
 
     const month = currentMonth();
     const monthStart = new Date(`${month}-01T00:00:00`);
     const avgTicket = Number(business.avgTicketPrice) || 0;
+    const primaryId = locations.find((l) => l.isPrimary)?.id ?? null;
+
+    // One query for the month's conversations, aggregated in memory — avoids an
+    // N+1 query per location.
+    const convs = await prisma.conversation.findMany({
+      where: { businessId: business.id, createdAt: { gte: monthStart } },
+      select: { locationId: true, status: true, estimatedValue: true },
+    });
+
+    type Acc = { leads: number; booked: number; recovered: number; needsFollowup: number };
+    const acc = new Map<string, Acc>();
+    for (const l of locations) acc.set(l.id, { leads: 0, booked: 0, recovered: 0, needsFollowup: 0 });
+
+    for (const c of convs) {
+      // Conversations with no location (main-line calls) roll up to the primary.
+      const key = c.locationId && acc.has(c.locationId) ? c.locationId : primaryId;
+      if (!key) continue;
+      const a = acc.get(key)!;
+      a.leads++;
+      if (c.status === "booked") {
+        a.booked++;
+        a.recovered += c.estimatedValue ? Number(c.estimatedValue) : avgTicket;
+      } else if (c.status === "needs_followup") {
+        a.needsFollowup++;
+      }
+    }
 
     const metrics: LocationMetric[] = [];
     const combined = { leads: 0, booked: 0, recovered: 0 };
     for (const loc of locations) {
-      const convs = await prisma.conversation.findMany({
-        where: { businessId: business.id, locationId: loc.id, createdAt: { gte: monthStart } },
-        select: { status: true, estimatedValue: true },
-      });
-      const booked = convs.filter((c) => c.status === "booked");
-      const recovered = booked.reduce((s, c) => s + (c.estimatedValue ? Number(c.estimatedValue) : avgTicket), 0);
-      const needsFollowup = convs.filter((c) => c.status === "needs_followup").length;
-      combined.leads += convs.length;
-      combined.booked += booked.length;
-      combined.recovered += recovered;
+      const a = acc.get(loc.id)!;
+      combined.leads += a.leads;
+      combined.booked += a.booked;
+      combined.recovered += a.recovered;
       metrics.push({
         id: loc.id,
         name: loc.name,
@@ -87,10 +129,10 @@ export async function getLocationsData(): Promise<LocationsData> {
         active: loc.active,
         latitude: loc.latitude,
         longitude: loc.longitude,
-        leads: convs.length,
-        booked: booked.length,
-        recovered,
-        needsFollowup,
+        leads: a.leads,
+        booked: a.booked,
+        recovered: a.recovered,
+        needsFollowup: a.needsFollowup,
         isPrimary: loc.isPrimary,
       });
     }

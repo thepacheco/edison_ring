@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getDashboardData, type RecentLead } from "@/lib/dashboard";
+import { getCurrentBusiness } from "@/lib/auth";
 import { MoneyCounter } from "@/components/MoneyCounter";
 import { AppNav } from "@/components/AppNav";
 import { Toast } from "@/components/Toast";
@@ -21,6 +23,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ test?: string }>;
 }) {
   const { test } = await searchParams;
+  if (!(await getCurrentBusiness())) redirect("/login");
   const d = await getDashboardData();
   const usagePct = Math.min(
     100,

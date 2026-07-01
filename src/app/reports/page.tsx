@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getAnalytics, type WeekPoint } from "@/lib/analytics";
+import { getCurrentBusiness } from "@/lib/auth";
 import { AppNav } from "@/components/AppNav";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +10,7 @@ const HOURS = ["12a", "3a", "6a", "9a", "12p", "3p", "6p", "9p"];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default async function ReportsPage() {
+  if (!(await getCurrentBusiness())) redirect("/login");
   const a = await getAnalytics();
   const momDelta = a.recoveredThisMonth - a.recoveredLastMonth;
   const maxWeek = Math.max(1, ...a.weeks.map((w) => w.leads));

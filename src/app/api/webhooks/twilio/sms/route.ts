@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { validateTwilioSignature } from "@/lib/twilio";
+import { validateTwilioSignature, sendSms } from "@/lib/twilio";
 import { advanceConversation } from "@/lib/conversation";
 import { recordNewConversation } from "@/lib/usage";
 import { resolveByDialedNumber } from "@/lib/locations";
+import {
+  classifyKeyword,
+  isOptedOut,
+  optOut,
+  optIn,
+  stopReply,
+  startReply,
+  helpReply,
+} from "@/lib/optout";
 
 export const runtime = "nodejs";
 
@@ -40,6 +49,29 @@ export async function POST(req: Request) {
   const resolved = await resolveByDialedNumber(edisonNumber);
   if (!resolved) return emptyTwiml();
   const { business, locationId } = resolved;
+
+  // --- SMS compliance: STOP / START / HELP keywords (TCPA / A2P 10DLC) ---
+  const keyword = classifyKeyword(body);
+  if (keyword === "stop") {
+    await optOut(business.id, customerPhone);
+    await safeReply(customerPhone, edisonNumber, stopReply(business.name));
+    return emptyTwiml();
+  }
+  if (keyword === "start") {
+    await optIn(business.id, customerPhone);
+    await safeReply(customerPhone, edisonNumber, startReply(business.name));
+    return emptyTwiml();
+  }
+  if (keyword === "help") {
+    await safeReply(customerPhone, edisonNumber, helpReply(business.name));
+    return emptyTwiml();
+  }
+
+  // Someone who previously opted out texted something else — stay silent (no
+  // automated replies) until they explicitly reply START.
+  if (await isOptedOut(business.id, customerPhone)) {
+    return emptyTwiml();
+  }
 
   // Find an open conversation for this caller, or open a new one (cold inbound).
   let conversation = await prisma.conversation.findFirst({
@@ -89,4 +121,13 @@ function emptyTwiml() {
     '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
     { status: 200, headers: { "Content-Type": "text/xml" } },
   );
+}
+
+/** Best-effort compliance reply (STOP/START/HELP confirmation). */
+async function safeReply(to: string, from: string, message: string) {
+  try {
+    await sendSms({ to, from, body: message });
+  } catch (err) {
+    console.error("Failed to send compliance reply:", err);
+  }
 }
