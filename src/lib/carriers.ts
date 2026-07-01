@@ -55,6 +55,22 @@ export const CARRIERS: Carrier[] = [
     notes: "Google Voice forwarding is configured in Voice settings.",
   },
   {
+    id: "landline",
+    name: "Landline (traditional / copper)",
+    forwardCode: "*92{EDISON}",
+    deactivateCode: "*93",
+    notes:
+      "Forwards on no-answer on most landlines. Codes vary by phone company — if *92 doesn't work, call them and ask to turn on 'Call Forwarding No Answer' to this number.",
+  },
+  {
+    id: "voip_home",
+    name: "Home / office VoIP (Xfinity, Spectrum, Ooma, Vonage, Fios)",
+    forwardCode:
+      "Set in your provider's app or website: Call Forwarding → No Answer (or Busy) → {EDISON}",
+    deactivateCode: "Remove the forwarding rule in the provider's app.",
+    notes: "Cable/VoIP home phones are configured online, not with a dial code.",
+  },
+  {
     id: "other",
     name: "Other / not sure",
     forwardCode: "Talk to a human — we'll find your exact code.",
