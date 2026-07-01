@@ -4,6 +4,8 @@ import { getCurrentBusiness } from "@/lib/auth";
 import { AppNav } from "@/components/AppNav";
 import { SettingsTabs } from "@/components/SettingsTabs";
 import { SubmitButton } from "@/components/SubmitButton";
+import { KeywordChips, TemplateChips } from "@/components/Suggest";
+import { keywordSuggestions, greetingTemplates } from "@/lib/suggestions";
 import {
   updateSettingsAction,
   toggleWorkerAction,
@@ -109,12 +111,14 @@ export default async function SettingsPage({
               <input type="hidden" name="tab" value="messaging" />
               <Section title="Auto-text wording" hint="The first message Edison sends. Keep it sounding like you. Use {business} for your name.">
                 <textarea
+                  id="greeting-input"
                   name="greeting"
                   defaultValue={tone.greeting || ""}
                   placeholder="Hi, this is {business} 👋 Sorry we missed your call! What can we help with?"
                   rows={3}
                   style={{ width: "100%", border: "1px solid var(--line)", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontFamily: "inherit", lineHeight: 1.5, resize: "vertical", background: "var(--card)", color: "var(--ink)" }}
                 />
+                <TemplateChips targetId="greeting-input" templates={greetingTemplates(tone.voice || "friendly")} />
                 <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                   {["friendly", "professional", "brief"].map((v) => (
                     <label key={v} style={{ fontSize: 12, borderRadius: 7, padding: "6px 11px", border: "1px solid var(--line)", cursor: "pointer", textTransform: "capitalize" }}>
@@ -206,8 +210,9 @@ export default async function SettingsPage({
                     <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
                       <WInput name="name" placeholder="Name" />
                       <WInput name="phoneNumber" placeholder="Phone" />
-                      <WInput name="keywords" placeholder="keywords: drain, furnace" />
+                      <input id="new-worker-keywords" name="keywords" placeholder="keywords: drain, furnace" style={{ flex: "1 1 150px", minWidth: 0, border: "1px solid var(--line)", borderRadius: 9, padding: "9px 11px", fontSize: 13, fontFamily: "inherit", background: "var(--card)", color: "var(--ink)" }} />
                     </div>
+                    <KeywordChips targetId="new-worker-keywords" suggestions={keywordSuggestions(business!.businessType)} />
                     <button type="submit" style={{ ...wBtn, alignSelf: "flex-start", background: "var(--ink)", color: "var(--ink-invert)", border: "none" }}>Add worker</button>
                   </form>
                 </Section>
