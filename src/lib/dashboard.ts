@@ -20,6 +20,13 @@ export interface TrendPoint {
   recovered: number;
 }
 
+export interface UpcomingAppt {
+  id: string;
+  name: string;
+  whenLabel: string;
+  summary: string;
+}
+
 export interface DashboardData {
   businessName: string;
   recoveredThisMonth: number;
@@ -30,11 +37,24 @@ export interface DashboardData {
   conversationLimit: number;
   needsFollowup: number;
   recentLeads: RecentLead[];
+  upcoming: UpcomingAppt[]; // next booked appointments
   trend: TrendPoint[]; // last 8 weeks
   funnel: { leads: number; engaged: number; booked: number }; // this month
   paidForItself: boolean;
   returnMultiple: number;
   demo: boolean; // true when the DB is unavailable and we're showing sample data
+}
+
+function whenLabel(d: Date, now: Date): string {
+  const day = new Date(d);
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const time = day.toLocaleString("en-US", { hour: "numeric", minute: "2-digit" });
+  if (isSameDay(day, now)) return `Today · ${time}`;
+  if (isSameDay(day, tomorrow)) return `Tomorrow · ${time}`;
+  return `${day.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric" })} · ${time}`;
 }
 
 function initialsOf(nameOrPhone: string): string {
@@ -67,6 +87,11 @@ const DEMO: DashboardData = {
     { label: "6/24", leads: 27, booked: 14, recovered: 4200 },
   ],
   funnel: { leads: 62, engaged: 41, booked: 14 },
+  upcoming: [
+    { id: "demo-1", name: "Marcus Reyes", whenLabel: "Today · 4:00 PM", summary: "AC not cooling upstairs" },
+    { id: "demo-2", name: "Priya Shah", whenLabel: "Tomorrow · 9:00 AM", summary: "Furnace tune-up" },
+    { id: "demo-3", name: "Luis Garrido", whenLabel: "Thu · 1:00 PM", summary: "Brake inspection" },
+  ],
   recentLeads: [
     {
       id: "demo-1",
@@ -120,7 +145,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     const windowStart = new Date(now.getTime() - WEEKS * MS_WEEK);
     const avgTicket = Number(business.avgTicketPrice) || 0;
 
-    const [bookedThisMonth, usage, needsFollowup, recent, windowConvos] =
+    const [bookedThisMonth, usage, needsFollowup, recent, windowConvos, upcomingRaw] =
       await Promise.all([
         prisma.conversation.findMany({
           where: {
@@ -154,6 +179,12 @@ export async function getDashboardData(): Promise<DashboardData> {
           where: { businessId: business.id, createdAt: { gte: windowStart } },
           select: { createdAt: true, status: true, estimatedValue: true, exchangeCount: true },
         }),
+        prisma.conversation.findMany({
+          where: { businessId: business.id, bookedSlot: { gte: now } },
+          orderBy: { bookedSlot: "asc" },
+          take: 4,
+          select: { id: true, customerName: true, customerPhone: true, bookedSlot: true, summary: true },
+        }),
       ]);
 
     // Weekly trend (oldest → newest) from the 8-week window.
@@ -181,6 +212,16 @@ export async function getDashboardData(): Promise<DashboardData> {
       booked: monthConvos.filter((c) => c.status === "booked").length,
     };
 
+    const upcoming: UpcomingAppt[] = upcomingRaw.map((c) => {
+      const name = c.customerName || c.customerPhone;
+      return {
+        id: c.id,
+        name,
+        whenLabel: whenLabel(c.bookedSlot!, now),
+        summary: c.summary || "Appointment",
+      };
+    });
+
     const recovered = bookedThisMonth.reduce(
       (sum, c) => sum + (c.estimatedValue ? Number(c.estimatedValue) : avgTicket),
       0,
@@ -199,6 +240,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       conversationsUsed: usage?.conversationCount ?? 0,
       conversationLimit: business.conversationLimit,
       needsFollowup,
+      upcoming,
       trend,
       funnel,
       paidForItself: recovered >= subscriptionCost,

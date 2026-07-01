@@ -43,15 +43,25 @@ export async function signupAction(formData: FormData) {
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingBiz || existingUser) redirect("/signup?error=exists");
 
-  // Assign the configured Edison number if free, else a placeholder to be set
-  // during setup (each business needs its own provisioned number).
-  const envNumber = process.env.TWILIO_PHONE_NUMBER;
-  let twilioNumber = envNumber || `pending-${randomUUID()}`;
-  if (envNumber) {
-    const taken = await prisma.business.findUnique({
-      where: { twilioNumber: envNumber },
-    });
-    if (taken) twilioNumber = `pending-${randomUUID()}`;
+  // Give each new business its OWN dedicated Edison number. With Twilio
+  // configured we auto-provision one on signup; otherwise (dev/demo) we use the
+  // shared env number for the first business, else a placeholder to provision
+  // later from Setup.
+  let twilioNumber = `pending-${randomUUID()}`;
+  try {
+    const { provisionNumber, twilioConfigured } = await import("@/lib/twilio");
+    if (twilioConfigured()) {
+      const r = await provisionNumber();
+      if (r.provisioned) twilioNumber = r.number;
+    } else {
+      const envNumber = process.env.TWILIO_PHONE_NUMBER;
+      if (envNumber) {
+        const taken = await prisma.business.findUnique({ where: { twilioNumber: envNumber } });
+        if (!taken) twilioNumber = envNumber;
+      }
+    }
+  } catch (err) {
+    console.error("signup number provisioning failed (using placeholder):", err);
   }
 
   const p = planFor(plan);

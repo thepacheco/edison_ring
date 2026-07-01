@@ -305,6 +305,47 @@ export default async function DashboardPage({
           />
         </section>
 
+        {/* upcoming appointments */}
+        <section
+          className="rise rise-3"
+          style={{
+            width: "100%",
+            maxWidth: 760,
+            background: "var(--card)",
+            border: "1px solid var(--line)",
+            borderRadius: 16,
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--line-soft)" }}>
+            <span style={{ fontWeight: 700, fontSize: 15 }}>Upcoming appointments</span>
+            <Link href="/calendar" style={{ fontSize: 13, color: "var(--indigo)", fontWeight: 600 }}>
+              Open calendar →
+            </Link>
+          </div>
+          {d.upcoming.length === 0 && (
+            <div style={{ padding: "22px 20px", fontSize: 14, color: "var(--faint)" }}>
+              No upcoming appointments yet. When Edison books a job, it shows up here and on the calendar.
+            </div>
+          )}
+          {d.upcoming.map((u, i) => (
+            <Link
+              key={u.id}
+              href={`/conversations/${u.id}`}
+              className="row-hover"
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 20px", borderBottom: i === d.upcoming.length - 1 ? "none" : "1px solid var(--line-soft)" }}
+            >
+              <div className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--indigo)", background: "var(--indigo-soft)", borderRadius: 8, padding: "6px 10px", whiteSpace: "nowrap" }}>
+                {u.whenLabel}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{u.name}</div>
+                <div style={{ fontSize: 12.5, color: "var(--faint)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.summary}</div>
+              </div>
+            </Link>
+          ))}
+        </section>
+
         {/* recent leads */}
         <section
           className="rise rise-4"
