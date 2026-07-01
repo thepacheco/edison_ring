@@ -25,7 +25,8 @@ Neon lets you branch your database like git. Your live data stays untouched.
 
 1. In your Neon project, **Branches → New branch**, name it `test`.
 2. Copy the branch's **pooled** and **direct** connection strings.
-3. Put them in `.env.local` as `DATABASE_URL` and `DIRECT_URL`.
+3. Put them in `.env` as `DATABASE_URL` and `DIRECT_URL` (use `.env`, not
+   `.env.local` — the Prisma CLI only reads `.env`).
 
 When you want a clean slate, delete the `test` branch and make a new one.
 
@@ -37,7 +38,7 @@ docker run --name edison-test-pg \
   -p 5432:5432 -d postgres:16
 ```
 
-Then in `.env.local` (same string for both):
+Then in `.env` (same string for both):
 
 ```bash
 DATABASE_URL="postgresql://postgres:edison@localhost:5432/edison?schema=public"
@@ -69,7 +70,7 @@ Admin/CEO cockpit:
 
 ```
 URL:      /admin/login
-Password: whatever you set as ADMIN_PASSWORD in .env.local
+Password: whatever you set as ADMIN_PASSWORD in .env
 ```
 
 Need a second user to test roles/invites? Log in as the owner →

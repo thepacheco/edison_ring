@@ -71,11 +71,12 @@ export function AppNav({
               <Link
                 key={l.href}
                 href={l.href}
+                className={on ? undefined : "nav-link"}
                 style={{
                   fontSize: 13.5,
                   fontWeight: on ? 600 : 500,
                   color: on ? "var(--ink)" : "var(--muted)",
-                  background: on ? "#f2f1fe" : "transparent",
+                  background: on ? "var(--indigo-soft)" : "transparent",
                   padding: "7px 13px",
                   borderRadius: 8,
                 }}

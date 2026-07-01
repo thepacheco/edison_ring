@@ -90,18 +90,24 @@ Customer text ─▶ Twilio SMS webhook ─▶ log inbound ─▶ Claude engine 
 
 ```bash
 npm install
-cp .env.example .env.local      # fill in real values (see below)
-npm run db:push                 # create tables (needs a reachable Postgres)
-npm run db:seed                 # seed one demo business + workers
+cp .env.example .env            # fill in real values (see below)
+npm run db:migrate              # apply migrations (needs a reachable Postgres)
+npm run db:seed                 # seed one demo business + workers + a login
 npm run dev                     # http://localhost:3000
 ```
+
+> Use `.env`, not `.env.local` — the Prisma CLI (`db:migrate`, `db:seed`) reads
+> `.env` and ignores `.env.local`. Both files are gitignored.
+
+> New to the repo? [`docs/RUN_FROM_SCRATCH.md`](docs/RUN_FROM_SCRATCH.md) walks
+> through this on a fresh Mac step by step, including how to get Postgres.
 
 ### Environment variables
 
 See `.env.example`. Required for Day 1: `DATABASE_URL`, `ANTHROPIC_API_KEY`,
 `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`.
 
-`.env.local` is gitignored — **never commit real secrets.** Set
+`.env` is gitignored — **never commit real secrets.** Set
 `TWILIO_SKIP_SIGNATURE_VALIDATION=true` only for local dev without a public URL.
 
 ### Wiring up Twilio
@@ -148,7 +154,7 @@ Email:    owner@rivera-comfort.test
 Password: password123
 ```
 
-Admin/CEO cockpit (`/admin`) uses the `ADMIN_PASSWORD` you set in `.env.local`.
+Admin/CEO cockpit (`/admin`) uses the `ADMIN_PASSWORD` you set in `.env`.
 
 ## Notes
 

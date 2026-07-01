@@ -66,6 +66,7 @@ export default async function DashboardPage({
 
         {/* centerpiece — paid for itself tracker */}
         <section
+          className="rise"
           style={{
             width: "100%",
             maxWidth: 760,
@@ -190,6 +191,7 @@ export default async function DashboardPage({
 
         {/* stat strip */}
         <section
+          className="rise rise-1"
           style={{
             width: "100%",
             maxWidth: 760,
@@ -238,10 +240,24 @@ export default async function DashboardPage({
               {d.needsFollowup}
             </span>
           </StatCard>
+          <StatCard label="Return on cost">
+            <span
+              className="mono"
+              style={{ fontWeight: 700, fontSize: 22, color: "var(--green)" }}
+            >
+              {d.returnMultiple}×
+            </span>
+          </StatCard>
+          <StatCard label="Avg ticket">
+            <span className="mono" style={{ fontWeight: 700, fontSize: 22 }}>
+              ${d.avgTicket}
+            </span>
+          </StatCard>
         </section>
 
         {/* recent leads */}
         <section
+          className="rise rise-2"
           style={{
             width: "100%",
             maxWidth: 760,
@@ -307,8 +323,9 @@ export default async function DashboardPage({
 function StatCard({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div
+      className="lift"
       style={{
-        flex: "1 1 200px",
+        flex: "1 1 140px",
         background: "var(--card)",
         border: "1px solid var(--line)",
         borderRadius: 14,
@@ -335,12 +352,13 @@ function LeadRow({ lead, last }: { lead: RecentLead; last: boolean }) {
   return (
     <Link
       href={`/conversations/${lead.id}`}
+      className="row-hover"
       style={{
         display: "flex",
         alignItems: "center",
         gap: 14,
         padding: "15px 20px",
-        borderBottom: last ? "none" : "1px solid #f4f5f8",
+        borderBottom: last ? "none" : "1px solid var(--line-soft)",
       }}
     >
       <div
