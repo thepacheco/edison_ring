@@ -38,6 +38,9 @@ export async function signupAction(formData: FormData) {
   if (password.length < 8) {
     redirect("/signup?error=weak_password");
   }
+  if (password !== String(formData.get("confirm") || "")) {
+    redirect("/signup?error=mismatch");
+  }
 
   const existingBiz = await prisma.business.findUnique({ where: { ownerEmail: email } });
   const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -284,6 +287,9 @@ export async function resetPasswordAction(formData: FormData) {
   const token = String(formData.get("token") || "");
   const next = String(formData.get("password") || "");
   if (next.length < 8) redirect(`/reset?token=${token}&error=weak`);
+  if (next !== String(formData.get("confirm") || "")) {
+    redirect(`/reset?token=${token}&error=mismatch`);
+  }
   const rec = await prisma.passwordResetToken.findUnique({
     where: { tokenHash: hashResetToken(token) },
   });

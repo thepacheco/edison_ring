@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ThemeToggle } from "./ThemeToggle";
 import { INDUSTRIES } from "@/lib/industries";
 
 const NAV = [
@@ -51,7 +50,6 @@ export function MarketingNav() {
           </Link>
         ))}
         <Link href="/login">Log in</Link>
-        <ThemeToggle />
         <Link
           href="/signup"
           style={{

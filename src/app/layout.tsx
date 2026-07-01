@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { getTheme } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Edison — Missed Call Rescue",
@@ -13,14 +12,13 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const theme = await getTheme();
   return (
-    <html lang="en" data-theme={theme}>
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

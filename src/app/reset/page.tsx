@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { resetPasswordAction } from "../actions";
-import { AuthShell, Field, Err } from "@/components/AuthUI";
+import { AuthShell, Err } from "@/components/AuthUI";
 import { SubmitButton } from "@/components/SubmitButton";
+import { PasswordField } from "@/components/PasswordField";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +30,10 @@ export default async function ResetPage({
     <AuthShell title="Set a new password" subtitle="Choose a strong password (at least 8 characters).">
       <form action={resetPasswordAction} style={{ display: "flex", flexDirection: "column", gap: 13 }}>
         {error === "weak" && <Err msg="Password must be at least 8 characters." />}
+        {error === "mismatch" && <Err msg="The two passwords don't match." />}
         <input type="hidden" name="token" value={token} />
-        <Field label="New password" name="password" type="password" placeholder="••••••••" required />
+        <PasswordField name="password" label="New password" hint="At least 8 characters." />
+        <PasswordField name="confirm" label="Confirm new password" hint="Type it again to be sure." />
         <SubmitButton
           style={{ background: "var(--indigo)", color: "#fff", border: "none", borderRadius: 11, padding: "13px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}
           pendingText="Updating…"
