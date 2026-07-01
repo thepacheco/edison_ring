@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
 import { AppNav } from "@/components/AppNav";
+import { SettingsTabs } from "@/components/SettingsTabs";
 import { updateSettingsAction, toggleWorkerAction } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -34,9 +35,10 @@ export default async function SettingsPage({
         <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.02em", margin: "0 0 4px" }}>
           Settings
         </h1>
-        <p style={{ margin: "0 0 18px", fontSize: 13.5, color: "var(--faint)" }}>
+        <p style={{ margin: "0 0 14px", fontSize: 13.5, color: "var(--faint)" }}>
           {business!.name}
         </p>
+        <SettingsTabs active="/settings" />
         {saved && (
           <div
             style={{

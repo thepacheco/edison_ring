@@ -6,15 +6,15 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled (app queries)
+  directUrl = env("DIRECT_URL") // direct (migrations); falls back to DATABASE_URL if unset
 }
 
 model Business {
   id                String   @id @default(cuid())
   name              String
-  ownerEmail        String   @unique
-  passwordHash      String? // simple credentials auth (scrypt)
+  ownerEmail        String   @unique // primary contact / billing email
   phoneNumber       String // their forwarded business line
   twilioNumber      String   @unique // the Edison-provisioned number
   carrier           String?
@@ -47,6 +47,35 @@ model Business {
   conversations Conversation[]
   workers       Worker[]
   usageRecords  UsageRecord[]
+  users         User[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("staff") // owner | staff
+  isTest       Boolean  @default(false) // demo/dummy user for onboarding tests
+  createdAt    DateTime @default(now())
+
+  resetTokens PasswordResetToken[]
+
+  @@index([businessId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique // sha256 of the emailed token
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Location {
