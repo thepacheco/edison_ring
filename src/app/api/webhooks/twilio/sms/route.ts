@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { validateTwilioSignature } from "@/lib/twilio";
 import { advanceConversation } from "@/lib/conversation";
 import { recordNewConversation } from "@/lib/usage";
+import { resolveByDialedNumber } from "@/lib/locations";
 
 export const runtime = "nodejs";
 
@@ -36,10 +37,9 @@ export async function POST(req: Request) {
     return emptyTwiml();
   }
 
-  const business = await prisma.business.findUnique({
-    where: { twilioNumber: edisonNumber },
-  });
-  if (!business) return emptyTwiml();
+  const resolved = await resolveByDialedNumber(edisonNumber);
+  if (!resolved) return emptyTwiml();
+  const { business, locationId } = resolved;
 
   // Find an open conversation for this caller, or open a new one (cold inbound).
   let conversation = await prisma.conversation.findFirst({
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
   let isNew = false;
   if (!conversation) {
     conversation = await prisma.conversation.create({
-      data: { businessId: business.id, customerPhone, status: "new" },
+      data: { businessId: business.id, locationId, customerPhone, status: "new" },
     });
     isNew = true;
   }
