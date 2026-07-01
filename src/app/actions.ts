@@ -10,12 +10,17 @@ import {
   destroySession,
   getCurrentBusiness,
   getCurrentUser,
+  requireOwner,
   createAdminSession,
   checkAdminPassword,
   makeResetToken,
   hashResetToken,
 } from "@/lib/auth";
 import { planFor } from "@/lib/pricing";
+
+// Precomputed hash of a random value, used to equalize login timing when the
+// submitted email doesn't exist (defends against user enumeration).
+const DUMMY_HASH = hashPassword(randomUUID());
 
 export async function signupAction(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
@@ -26,6 +31,12 @@ export async function signupAction(formData: FormData) {
 
   if (!email || !password || !name) {
     redirect("/signup?error=missing");
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    redirect("/signup?error=email");
+  }
+  if (password.length < 8) {
+    redirect("/signup?error=weak_password");
   }
 
   const existingBiz = await prisma.business.findUnique({ where: { ownerEmail: email } });
@@ -56,6 +67,18 @@ export async function signupAction(formData: FormData) {
         foundingLockedAt: p.id === "founding" ? new Date() : null,
       },
     });
+    // Every business is a location: the primary maps to the main Edison number,
+    // so single-store owners see their Locations page and their main-number
+    // conversations are attributed correctly.
+    await tx.location.create({
+      data: {
+        businessId: business.id,
+        name,
+        twilioNumber,
+        phoneNumber: phoneNumber || "",
+        isPrimary: true,
+      },
+    });
     return tx.user.create({
       data: {
         businessId: business.id,
@@ -75,7 +98,12 @@ export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  // Always run a hash comparison so response timing doesn't reveal whether the
+  // email exists (user-enumeration defense).
+  const ok = user
+    ? verifyPassword(password, user.passwordHash)
+    : verifyPassword(password, DUMMY_HASH);
+  if (!user || !ok) {
     redirect("/login?error=invalid");
   }
   await createSession(user!.id);
@@ -263,8 +291,9 @@ export async function runTestLeadAction() {
 }
 
 export async function updateSettingsAction(formData: FormData) {
-  const business = await getCurrentBusiness();
-  if (!business) redirect("/login");
+  const owner = await requireOwner();
+  if (!owner) redirect("/settings?error=forbidden");
+  const business = owner.business;
 
   const avgTicket = Number(formData.get("avgTicketPrice"));
   const routingMode = String(formData.get("routingMode") || business!.routingMode);
@@ -283,8 +312,9 @@ export async function updateSettingsAction(formData: FormData) {
 }
 
 export async function addWorkerAction(formData: FormData) {
-  const business = await getCurrentBusiness();
-  if (!business) redirect("/login");
+  const owner = await requireOwner();
+  if (!owner) redirect("/settings?error=forbidden#workers");
+  const business = owner.business;
   const name = String(formData.get("name") || "").trim();
   const phoneNumber = String(formData.get("phoneNumber") || "").trim();
   const keywords = String(formData.get("keywords") || "")
@@ -306,8 +336,9 @@ export async function addWorkerAction(formData: FormData) {
 }
 
 export async function updateWorkerAction(formData: FormData) {
-  const business = await getCurrentBusiness();
-  if (!business) redirect("/login");
+  const owner = await requireOwner();
+  if (!owner) redirect("/settings?error=forbidden#workers");
+  const business = owner.business;
   const workerId = String(formData.get("workerId"));
   const name = String(formData.get("name") || "").trim();
   const phoneNumber = String(formData.get("phoneNumber") || "").trim();
@@ -329,8 +360,9 @@ export async function updateWorkerAction(formData: FormData) {
 }
 
 export async function removeWorkerAction(formData: FormData) {
-  const business = await getCurrentBusiness();
-  if (!business) redirect("/login");
+  const owner = await requireOwner();
+  if (!owner) redirect("/settings?error=forbidden#workers");
+  const business = owner.business;
   const workerId = String(formData.get("workerId"));
   const worker = await prisma.worker.findFirst({
     where: { id: workerId, businessId: business!.id },
@@ -347,8 +379,9 @@ export async function removeWorkerAction(formData: FormData) {
 }
 
 export async function toggleWorkerAction(formData: FormData) {
-  const business = await getCurrentBusiness();
-  if (!business) redirect("/login");
+  const owner = await requireOwner();
+  if (!owner) redirect("/settings?error=forbidden#workers");
+  const business = owner.business;
   const workerId = String(formData.get("workerId"));
   const worker = await prisma.worker.findFirst({
     where: { id: workerId, businessId: business!.id },
@@ -363,8 +396,9 @@ export async function toggleWorkerAction(formData: FormData) {
 }
 
 export async function startCheckoutAction(formData: FormData) {
-  const business = await getCurrentBusiness();
-  if (!business) redirect("/login");
+  const owner = await requireOwner();
+  if (!owner) redirect("/billing?error=forbidden");
+  const business = owner.business;
   const { stripe, stripeConfigured, priceIdFor } = await import("@/lib/stripe");
   const { planFor, TRIAL_DAYS } = await import("@/lib/pricing");
 
@@ -423,8 +457,9 @@ export async function startCheckoutAction(formData: FormData) {
 }
 
 export async function billingPortalAction() {
-  const business = await getCurrentBusiness();
-  if (!business) redirect("/login");
+  const owner = await requireOwner();
+  if (!owner) redirect("/billing?error=forbidden");
+  const business = owner.business;
   const { stripe, stripeConfigured } = await import("@/lib/stripe");
   if (!stripeConfigured() || !business!.stripeCustomerId) {
     redirect("/billing?error=no_customer");
@@ -462,8 +497,9 @@ export async function contactAction(formData: FormData) {
 }
 
 export async function addLocationAction(formData: FormData) {
-  const business = await getCurrentBusiness();
-  if (!business) redirect("/login");
+  const owner = await requireOwner();
+  if (!owner) redirect("/locations?error=forbidden");
+  const business = owner.business;
   const name = String(formData.get("name") || "").trim();
   const address = String(formData.get("address") || "").trim();
   const areaCode = String(formData.get("areaCode") || "").trim();
@@ -499,8 +535,9 @@ export async function addLocationAction(formData: FormData) {
 }
 
 export async function provisionLocationNumberAction(formData: FormData) {
-  const business = await getCurrentBusiness();
-  if (!business) redirect("/login");
+  const owner = await requireOwner();
+  if (!owner) redirect("/locations?error=forbidden");
+  const business = owner.business;
   const locationId = String(formData.get("locationId"));
   const areaCode = String(formData.get("areaCode") || "").trim();
   const loc = await prisma.location.findFirst({ where: { id: locationId, businessId: business!.id } });
@@ -523,20 +560,34 @@ export async function provisionLocationNumberAction(formData: FormData) {
 }
 
 export async function removeLocationAction(formData: FormData) {
-  const business = await getCurrentBusiness();
-  if (!business) redirect("/login");
+  const owner = await requireOwner();
+  if (!owner) redirect("/locations?error=forbidden");
+  const business = owner.business;
   const locationId = String(formData.get("locationId"));
-  const loc = await prisma.location.findFirst({ where: { id: locationId, businessId: business!.id } });
-  if (loc) await prisma.location.delete({ where: { id: loc.id } });
+  const loc = await prisma.location.findFirst({ where: { id: locationId, businessId: business.id } });
+  if (!loc) redirect("/locations");
+  // Never delete the primary location — it maps to the business's main number.
+  if (loc!.isPrimary) redirect("/locations?error=primary_protected");
+  // Release the provisioned Twilio number so it stops billing. Best-effort.
+  if (!loc!.twilioNumber.startsWith("pending-")) {
+    const { releaseNumber } = await import("@/lib/twilio");
+    try {
+      await releaseNumber(loc!.twilioNumber);
+    } catch (err) {
+      console.error("Failed to release Twilio number:", err);
+    }
+  }
+  await prisma.location.delete({ where: { id: loc!.id } });
   redirect("/locations?saved=removed");
 }
 
 export async function saveCarrierAction(formData: FormData) {
-  const business = await getCurrentBusiness();
-  if (!business) redirect("/login");
+  const owner = await requireOwner();
+  if (!owner) redirect("/setup?error=forbidden");
+  const business = owner.business;
   const carrier = String(formData.get("carrier") || "");
   await prisma.business.update({
-    where: { id: business!.id },
+    where: { id: business.id },
     data: { carrier },
   });
   redirect("/setup?step=2");

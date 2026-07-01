@@ -71,6 +71,19 @@ export async function provisionNumber(opts: {
 }
 
 /**
+ * Release a provisioned Twilio number so it stops incurring monthly charges.
+ * No-op when Twilio isn't configured or the number is a placeholder.
+ */
+export async function releaseNumber(number: string): Promise<void> {
+  if (!twilioConfigured() || number.startsWith("pending-")) return;
+  const client = twilioClient();
+  const matches = await client.incomingPhoneNumbers.list({ phoneNumber: number, limit: 1 });
+  if (matches.length > 0) {
+    await client.incomingPhoneNumbers(matches[0].sid).remove();
+  }
+}
+
+/**
  * Validate that an inbound webhook request genuinely came from Twilio.
  * Set TWILIO_SKIP_SIGNATURE_VALIDATION=true in local dev (no public URL).
  */

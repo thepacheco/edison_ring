@@ -48,6 +48,18 @@ model Business {
   workers       Worker[]
   usageRecords  UsageRecord[]
   users         User[]
+  optOuts       OptOut[]
+}
+
+model OptOut {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  phone      String // customer phone that texted STOP
+  createdAt  DateTime @default(now())
+
+  @@unique([businessId, phone])
+  @@index([businessId])
 }
 
 model User {
@@ -132,6 +144,7 @@ model Conversation {
 
   @@index([businessId, status])
   @@index([businessId, customerPhone])
+  @@index([locationId])
 }
 
 model Message {

@@ -13,7 +13,16 @@ const COOKIE = "edison_session";
 const ADMIN_COOKIE = "edison_admin";
 
 function secret(): string {
-  return process.env.NEXTAUTH_SECRET || "dev-insecure-secret-change-me";
+  const s = process.env.NEXTAUTH_SECRET;
+  if (!s) {
+    // Fail closed in production: an unset secret means every session cookie is
+    // forgeable. Only fall back to a dev value outside production.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("NEXTAUTH_SECRET must be set in production.");
+    }
+    return "dev-insecure-secret-change-me";
+  }
+  return s;
 }
 
 // --- password hashing (scrypt, no external deps) ---
@@ -94,15 +103,19 @@ export async function getCurrentUser(): Promise<
 }
 
 /**
- * Resolve the current business. Derived from the signed-in user; in a fresh dev
- * environment with no session, falls back to the first business so the app is
- * usable without auth.
+ * Resolve the current business. Derived from the signed-in user. In development
+ * only, falls back to the first business so the app is usable without auth. In
+ * production this returns null when there's no session — the page/action guards
+ * then redirect to /login (prevents an unauthenticated multi-tenant bypass).
  */
 export async function getCurrentBusiness(): Promise<Business | null> {
   try {
     const user = await getCurrentUser();
     if (user) return user.business;
-    return await prisma.business.findFirst();
+    if (process.env.NODE_ENV !== "production") {
+      return await prisma.business.findFirst();
+    }
+    return null;
   } catch {
     return null;
   }
@@ -111,6 +124,26 @@ export async function getCurrentBusiness(): Promise<Business | null> {
 export async function isOwner(): Promise<boolean> {
   const user = await getCurrentUser();
   return user?.role === "owner";
+}
+
+/**
+ * Guard for owner-only actions. Returns the owner user, or null if the caller
+ * isn't a signed-in owner. In development (no session) it resolves the owner of
+ * the first business so local testing isn't blocked.
+ */
+export async function requireOwner(): Promise<(User & { business: Business }) | null> {
+  const user = await getCurrentUser();
+  if (user) return user.role === "owner" ? user : null;
+  if (process.env.NODE_ENV !== "production") {
+    const business = await prisma.business.findFirst();
+    if (!business) return null;
+    const owner = await prisma.user.findFirst({
+      where: { businessId: business.id, role: "owner" },
+      include: { business: true },
+    });
+    return owner ?? null;
+  }
+  return null;
 }
 
 // --- password reset tokens ---

@@ -114,6 +114,8 @@ export function Footer() {
         <FooterCol title="Company" links={[
           { href: "/about", label: "About us" },
           { href: "/contact", label: "Contact" },
+          { href: "/terms", label: "Terms" },
+          { href: "/privacy", label: "Privacy" },
         ]} />
       </div>
       <div

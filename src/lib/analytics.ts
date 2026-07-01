@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { currentMonth } from "./usage";
 import { subscriptionCost as planSubscriptionCost, COGS } from "./pricing";
+import { getCurrentBusiness } from "./auth";
 
 export interface WeekPoint {
   label: string; // "Jun 2"
@@ -115,7 +116,12 @@ const DEMO: AnalyticsData = {
 
 export async function getAnalytics(): Promise<AnalyticsData> {
   try {
-    const business = await prisma.business.findFirst({ include: { locations: true } });
+    const current = await getCurrentBusiness();
+    if (!current) return DEMO;
+    const business = await prisma.business.findUnique({
+      where: { id: current.id },
+      include: { locations: true },
+    });
     if (!business) return DEMO;
 
     const now = new Date();

@@ -4,6 +4,7 @@ import { validateTwilioSignature, sendSms } from "@/lib/twilio";
 import { initialGreeting } from "@/lib/conversation";
 import { recordNewConversation } from "@/lib/usage";
 import { resolveByDialedNumber } from "@/lib/locations";
+import { isOptedOut } from "@/lib/optout";
 
 export const runtime = "nodejs";
 
@@ -44,6 +45,11 @@ export async function POST(req: Request) {
     return twiml("<Response><Hangup/></Response>");
   }
   const { business, locationId } = resolved;
+
+  // Respect SMS opt-out: never auto-text a caller who replied STOP.
+  if (await isOptedOut(business.id, customerPhone)) {
+    return twiml("<Response><Hangup/></Response>");
+  }
 
   // A missed call reaching us proves call-forwarding is wired up correctly, so
   // the setup wizard's live test passes the first time Edison receives one.

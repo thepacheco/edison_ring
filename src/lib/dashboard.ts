@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { currentMonth } from "./usage";
 import { subscriptionCost as planSubscriptionCost } from "./pricing";
+import { getCurrentBusiness } from "./auth";
 
 export interface RecentLead {
   id: string;
@@ -79,7 +80,10 @@ const DEMO: DashboardData = {
  */
 export async function getDashboardData(): Promise<DashboardData> {
   try {
-    const business = await prisma.business.findFirst({
+    const current = await getCurrentBusiness();
+    if (!current) return DEMO;
+    const business = await prisma.business.findUnique({
+      where: { id: current.id },
       include: { locations: true },
     });
     if (!business) return DEMO;

@@ -19,6 +19,10 @@ export default async function SignupPage({
             msg={
               error === "exists"
                 ? "An account with that email already exists."
+                : error === "email"
+                ? "Enter a valid email address."
+                : error === "weak_password"
+                ? "Password must be at least 8 characters."
                 : "Please fill in all required fields."
             }
           />
@@ -40,6 +44,13 @@ export default async function SignupPage({
         <button type="submit" style={primaryBtn}>
           Create account →
         </button>
+        <p style={{ fontSize: 11.5, color: "var(--faint)", textAlign: "center", lineHeight: 1.5, margin: 0 }}>
+          By creating an account you agree to our{" "}
+          <Link href="/terms" style={{ color: "var(--indigo)" }}>Terms</Link> and{" "}
+          <Link href="/privacy" style={{ color: "var(--indigo)" }}>Privacy Policy</Link>.
+          You confirm you&apos;re authorized to text the customers who call your
+          business. Callers can reply STOP to opt out; msg &amp; data rates may apply.
+        </p>
       </form>
       <p style={{ fontSize: 13, color: "var(--muted)", textAlign: "center" }}>
         Already have an account?{" "}
