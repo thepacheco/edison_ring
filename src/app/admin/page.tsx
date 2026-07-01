@@ -42,9 +42,14 @@ export default async function AdminPage() {
           </div>
           <span style={{ fontWeight: 800, fontSize: 15 }}>Edison · CEO cockpit</span>
         </div>
-        <Link href="/dashboard" style={{ fontSize: 13, color: "#9aa3b2" }}>
-          ← owner view
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <Link href="/admin/model" style={{ fontSize: 13, color: "#9aa3b2" }}>
+            Scenario model →
+          </Link>
+          <Link href="/dashboard" style={{ fontSize: 13, color: "#9aa3b2" }}>
+            ← owner view
+          </Link>
+        </div>
       </header>
 
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px 64px" }}>

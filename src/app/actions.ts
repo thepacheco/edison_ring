@@ -461,6 +461,76 @@ export async function contactAction(formData: FormData) {
   redirect("/contact?sent=ok");
 }
 
+export async function addLocationAction(formData: FormData) {
+  const business = await getCurrentBusiness();
+  if (!business) redirect("/login");
+  const name = String(formData.get("name") || "").trim();
+  const address = String(formData.get("address") || "").trim();
+  const areaCode = String(formData.get("areaCode") || "").trim();
+  const lat = parseFloat(String(formData.get("latitude") || ""));
+  const lng = parseFloat(String(formData.get("longitude") || ""));
+  if (!name) redirect("/locations?error=missing");
+
+  const { provisionNumber } = await import("@/lib/twilio");
+  let number = "";
+  let provisioned = false;
+  try {
+    const r = await provisionNumber({ areaCode: areaCode || undefined });
+    number = r.number;
+    provisioned = r.provisioned;
+  } catch {
+    number = `pending-${randomUUID()}`;
+  }
+
+  const count = await prisma.location.count({ where: { businessId: business!.id } });
+  await prisma.location.create({
+    data: {
+      businessId: business!.id,
+      name,
+      address: address || null,
+      twilioNumber: number,
+      isPrimary: count === 0,
+      latitude: Number.isFinite(lat) ? lat : null,
+      longitude: Number.isFinite(lng) ? lng : null,
+    },
+  });
+  // Keep the plan's conversation limit / pricing in step with location count.
+  redirect(provisioned ? "/locations?saved=added" : "/locations?saved=added_pending");
+}
+
+export async function provisionLocationNumberAction(formData: FormData) {
+  const business = await getCurrentBusiness();
+  if (!business) redirect("/login");
+  const locationId = String(formData.get("locationId"));
+  const areaCode = String(formData.get("areaCode") || "").trim();
+  const loc = await prisma.location.findFirst({ where: { id: locationId, businessId: business!.id } });
+  if (!loc) redirect("/locations");
+  const { provisionNumber } = await import("@/lib/twilio");
+  // redirect() throws internally, so keep it out of the try/catch below.
+  let outcome: string;
+  try {
+    const r = await provisionNumber({ areaCode: areaCode || undefined });
+    if (r.provisioned) {
+      await prisma.location.update({ where: { id: loc.id }, data: { twilioNumber: r.number } });
+      outcome = "saved=provisioned";
+    } else {
+      outcome = "error=twilio_unconfigured";
+    }
+  } catch {
+    outcome = "error=provision_failed";
+  }
+  redirect(`/locations?${outcome}`);
+}
+
+export async function removeLocationAction(formData: FormData) {
+  const business = await getCurrentBusiness();
+  if (!business) redirect("/login");
+  const locationId = String(formData.get("locationId"));
+  const loc = await prisma.location.findFirst({ where: { id: locationId, businessId: business!.id } });
+  if (loc) await prisma.location.delete({ where: { id: loc.id } });
+  redirect("/locations?saved=removed");
+}
+
 export async function saveCarrierAction(formData: FormData) {
   const business = await getCurrentBusiness();
   if (!business) redirect("/login");

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { validateTwilioSignature, sendSms } from "@/lib/twilio";
 import { initialGreeting } from "@/lib/conversation";
 import { recordNewConversation } from "@/lib/usage";
+import { resolveByDialedNumber } from "@/lib/locations";
 
 export const runtime = "nodejs";
 
@@ -36,14 +37,13 @@ export async function POST(req: Request) {
     return twiml("<Response><Hangup/></Response>");
   }
 
-  const business = await prisma.business.findUnique({
-    where: { twilioNumber: edisonNumber },
-  });
+  const resolved = await resolveByDialedNumber(edisonNumber);
 
   // Unknown number — nothing to do, just end the call.
-  if (!business) {
+  if (!resolved) {
     return twiml("<Response><Hangup/></Response>");
   }
+  const { business, locationId } = resolved;
 
   // A missed call reaching us proves call-forwarding is wired up correctly, so
   // the setup wizard's live test passes the first time Edison receives one.
@@ -68,6 +68,7 @@ export async function POST(req: Request) {
     conversation = await prisma.conversation.create({
       data: {
         businessId: business.id,
+        locationId,
         customerPhone,
         status: "new",
       },
@@ -88,7 +89,7 @@ export async function POST(req: Request) {
   try {
     const msg = await sendSms({
       to: customerPhone,
-      from: business.twilioNumber,
+      from: edisonNumber, // reply from the number that was actually dialed (location-aware)
       body: greeting,
     });
     await prisma.message.update({
