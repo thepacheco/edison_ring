@@ -290,6 +290,43 @@ export async function runTestLeadAction() {
   }
 }
 
+// --- lead status (any signed-in team member; not owner-only) ---
+
+export async function markContactedAction(formData: FormData) {
+  const business = await getCurrentBusiness();
+  if (!business) redirect("/login");
+  const id = String(formData.get("conversationId"));
+  const contacted = formData.get("contacted") === "true";
+  const conv = await prisma.conversation.findFirst({
+    where: { id, businessId: business!.id },
+  });
+  if (conv) {
+    await prisma.conversation.update({
+      where: { id: conv.id },
+      data: { contactedAt: contacted ? new Date() : null },
+    });
+  }
+  redirect(`/conversations/${id}`);
+}
+
+export async function markStatusAction(formData: FormData) {
+  const business = await getCurrentBusiness();
+  if (!business) redirect("/login");
+  const id = String(formData.get("conversationId"));
+  const status = String(formData.get("status"));
+  const allowed = ["new", "booked", "needs_followup", "closed"];
+  const conv = await prisma.conversation.findFirst({
+    where: { id, businessId: business!.id },
+  });
+  if (conv && allowed.includes(status)) {
+    await prisma.conversation.update({
+      where: { id: conv.id },
+      data: { status },
+    });
+  }
+  redirect(`/conversations/${id}`);
+}
+
 export async function updateSettingsAction(formData: FormData) {
   const owner = await requireOwner();
   if (!owner) redirect("/settings?error=forbidden");
