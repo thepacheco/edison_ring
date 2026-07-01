@@ -341,21 +341,31 @@ export async function updateSettingsAction(formData: FormData) {
   const owner = await requireOwner();
   if (!owner) redirect("/settings?error=forbidden");
   const business = owner.business;
+  const tab = String(formData.get("tab") || "");
 
-  const avgTicket = Number(formData.get("avgTicketPrice"));
-  const routingMode = String(formData.get("routingMode") || business!.routingMode);
-  const greeting = String(formData.get("greeting") || "");
-  const voice = String(formData.get("voice") || "friendly");
+  // Partial update: each settings sub-tab only submits its own fields, so we
+  // only touch what's present (avoids one tab wiping another's values).
+  const data: Record<string, unknown> = {};
 
-  await prisma.business.update({
-    where: { id: business!.id },
-    data: {
-      avgTicketPrice: Number.isFinite(avgTicket) ? avgTicket : business!.avgTicketPrice,
-      routingMode,
-      aiToneSettings: { greeting: greeting || undefined, voice },
-    },
-  });
-  redirect("/settings?saved=1");
+  if (formData.has("avgTicketPrice")) {
+    const v = Number(formData.get("avgTicketPrice"));
+    if (Number.isFinite(v)) data.avgTicketPrice = v;
+  }
+  if (formData.has("routingMode")) {
+    data.routingMode = String(formData.get("routingMode"));
+  }
+  if (formData.has("greeting") || formData.has("voice")) {
+    const existing = (business.aiToneSettings as { greeting?: string; voice?: string } | null) ?? {};
+    data.aiToneSettings = {
+      greeting: formData.has("greeting") ? String(formData.get("greeting")) || undefined : existing.greeting,
+      voice: formData.has("voice") ? String(formData.get("voice")) : existing.voice ?? "friendly",
+    };
+  }
+
+  if (Object.keys(data).length > 0) {
+    await prisma.business.update({ where: { id: business.id }, data });
+  }
+  redirect(`/settings?${tab ? `tab=${tab}&` : ""}saved=1`);
 }
 
 export async function addWorkerAction(formData: FormData) {
