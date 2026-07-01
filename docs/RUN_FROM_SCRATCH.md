@@ -58,10 +58,15 @@ npm install
 ## 3. Create your environment file
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-Open `.env.local` and set **at minimum** these two blocks. Everything else can
+> Use **`.env`**, not `.env.local`. The Next.js app reads both, but the Prisma
+> CLI (`db:migrate`, `db:seed`) only reads `.env` — put your database URL in
+> `.env` or migrations will fail with "Environment variable not found". Both
+> files are gitignored.
+
+Open `.env` and set **at minimum** these two blocks. Everything else can
 stay blank for the first local run.
 
 **Database** — paste your connection string in both:
@@ -94,7 +99,7 @@ ADMIN_PASSWORD=letmein
 APP_BASE_URL=http://localhost:3000
 ```
 
-> `.env.local` is gitignored. **Never commit real keys.** See
+> `.env` is gitignored. **Never commit real keys.** See
 > [GO_LIVE.md](GO_LIVE.md) for rotating/recycling keys before production.
 
 ---
