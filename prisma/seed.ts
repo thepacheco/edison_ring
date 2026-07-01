@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { scryptSync, randomBytes } from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -41,8 +42,24 @@ async function main() {
     },
   });
 
+  // Owner login (email: owner@rivera-comfort.test / password: password123)
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync("password123", salt, 64).toString("hex");
+  await prisma.user.upsert({
+    where: { email: "owner@rivera-comfort.test" },
+    update: {},
+    create: {
+      businessId: business.id,
+      email: "owner@rivera-comfort.test",
+      name: "Rivera Owner",
+      passwordHash: `${salt}:${hash}`,
+      role: "owner",
+    },
+  });
+
   console.log(`Seeded business ${business.name} (${business.id})`);
   console.log(`Edison number: ${business.twilioNumber}`);
+  console.log(`Login: owner@rivera-comfort.test / password123`);
 }
 
 main()

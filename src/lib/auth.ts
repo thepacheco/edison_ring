@@ -1,7 +1,13 @@
 import { cookies } from "next/headers";
-import { scryptSync, randomBytes, timingSafeEqual, createHmac } from "crypto";
+import {
+  scryptSync,
+  randomBytes,
+  timingSafeEqual,
+  createHmac,
+  createHash,
+} from "crypto";
 import { prisma } from "./prisma";
-import type { Business } from "@prisma/client";
+import type { Business, User } from "@prisma/client";
 
 const COOKIE = "edison_session";
 const ADMIN_COOKIE = "edison_admin";
@@ -24,8 +30,7 @@ export function verifyPassword(password: string, stored: string): boolean {
   const candidate = scryptSync(password, salt, 64);
   const expected = Buffer.from(hash, "hex");
   return (
-    candidate.length === expected.length &&
-    timingSafeEqual(candidate, expected)
+    candidate.length === expected.length && timingSafeEqual(candidate, expected)
   );
 }
 
@@ -52,9 +57,9 @@ function unsign(signed: string | undefined): string | null {
   return null;
 }
 
-export async function createSession(businessId: string): Promise<void> {
+export async function createSession(userId: string): Promise<void> {
   const jar = await cookies();
-  jar.set(COOKIE, sign(businessId), {
+  jar.set(COOKIE, sign(userId), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -68,22 +73,56 @@ export async function destroySession(): Promise<void> {
   jar.delete(COOKIE);
 }
 
+/** Resolve the signed-in user (with their business), or null. */
+export async function getCurrentUser(): Promise<
+  (User & { business: Business }) | null
+> {
+  try {
+    const jar = await cookies();
+    const userId = unsign(jar.get(COOKIE)?.value);
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { business: true },
+      });
+      if (user) return user;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Resolve the signed-in business. In a fresh dev environment with no session,
- * falls back to the first business so the dashboard is usable without auth.
+ * Resolve the current business. Derived from the signed-in user; in a fresh dev
+ * environment with no session, falls back to the first business so the app is
+ * usable without auth.
  */
 export async function getCurrentBusiness(): Promise<Business | null> {
   try {
-    const jar = await cookies();
-    const businessId = unsign(jar.get(COOKIE)?.value);
-    if (businessId) {
-      const b = await prisma.business.findUnique({ where: { id: businessId } });
-      if (b) return b;
-    }
+    const user = await getCurrentUser();
+    if (user) return user.business;
     return await prisma.business.findFirst();
   } catch {
     return null;
   }
+}
+
+export async function isOwner(): Promise<boolean> {
+  const user = await getCurrentUser();
+  return user?.role === "owner";
+}
+
+// --- password reset tokens ---
+
+export function makeResetToken(): { token: string; tokenHash: string } {
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  return { token, tokenHash };
+}
+
+export function hashResetToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 // --- admin (CEO) gate: a single env-configured password ---

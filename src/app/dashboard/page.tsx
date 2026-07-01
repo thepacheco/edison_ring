@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getDashboardData, type RecentLead } from "@/lib/dashboard";
 import { MoneyCounter } from "@/components/MoneyCounter";
 import { AppNav } from "@/components/AppNav";
+import { Toast } from "@/components/Toast";
+import { runTestLeadAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,12 @@ const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }>
     closed: { label: "Closed", color: "#5b6475", bg: "#f0f1f5" },
   };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ test?: string }>;
+}) {
+  const { test } = await searchParams;
   const d = await getDashboardData();
   const usagePct = Math.min(
     100,
@@ -22,6 +29,9 @@ export default async function DashboardPage() {
 
   return (
     <main style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      {test === "error" && (
+        <Toast text="Test lead failed — check your ANTHROPIC_API_KEY." kind="error" />
+      )}
       <AppNav active="/dashboard" businessName={d.businessName} />
 
       <div
@@ -248,12 +258,31 @@ export default async function DashboardPage() {
             }}
           >
             <span style={{ fontWeight: 700, fontSize: 15 }}>Recent leads</span>
-            <Link
-              href="/conversations"
-              style={{ fontSize: 13, color: "var(--indigo)", fontWeight: 600 }}
-            >
-              View all →
-            </Link>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <form action={runTestLeadAction}>
+                <button
+                  type="submit"
+                  style={{
+                    border: "1px solid var(--line)",
+                    background: "var(--card)",
+                    color: "var(--ink)",
+                    borderRadius: 9,
+                    padding: "6px 12px",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  ⚡ Run a test lead
+                </button>
+              </form>
+              <Link
+                href="/conversations"
+                style={{ fontSize: 13, color: "var(--indigo)", fontWeight: 600 }}
+              >
+                View all →
+              </Link>
+            </div>
           </div>
           {d.recentLeads.length === 0 && (
             <div

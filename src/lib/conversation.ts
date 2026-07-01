@@ -207,7 +207,10 @@ const HANDOFF_MESSAGE =
  * AI turn (with live calendar slots), book if confirmed, persist, send reply.
  * The inbound Message row must already exist.
  */
-export async function advanceConversation(conversationId: string): Promise<void> {
+export async function advanceConversation(
+  conversationId: string,
+  opts: { skipSend?: boolean } = {},
+): Promise<void> {
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
     include: {
@@ -298,17 +301,58 @@ export async function advanceConversation(conversationId: string): Promise<void>
     },
   });
 
-  try {
-    const msg = await sendSms({
-      to: conversation.customerPhone,
-      from: business.twilioNumber,
-      body: replyText,
-    });
-    await prisma.message.update({
-      where: { id: outbound.id },
-      data: { twilioSid: msg.sid },
-    });
-  } catch (err) {
-    console.error("Failed to send SMS reply:", err);
+  if (!opts.skipSend) {
+    try {
+      const msg = await sendSms({
+        to: conversation.customerPhone,
+        from: business.twilioNumber,
+        body: replyText,
+      });
+      await prisma.message.update({
+        where: { id: outbound.id },
+        data: { twilioSid: msg.sid },
+      });
+    } catch (err) {
+      console.error("Failed to send SMS reply:", err);
+    }
   }
+}
+
+/**
+ * Onboarding helper: simulate a missed-call → SMS → AI-reply flow end to end
+ * WITHOUT sending real texts, so an owner can watch the product work before
+ * their phone is wired up. Returns the created conversation id.
+ */
+export async function simulateTestLead(businessId: string): Promise<string> {
+  const business = await prisma.business.findUnique({ where: { id: businessId } });
+  if (!business) throw new Error("business not found");
+
+  const samples = [
+    "My AC stopped cooling upstairs and it's really hot — can someone come today?",
+    "Water heater is leaking into the garage, kind of urgent",
+    "Brakes are grinding, can you fit me in this week?",
+  ];
+  const body = samples[Math.floor(Math.random() * samples.length)];
+
+  const conversation = await prisma.conversation.create({
+    data: {
+      businessId: business.id,
+      customerPhone: "+15555550123",
+      customerName: "Test Lead",
+      status: "new",
+    },
+  });
+  await prisma.message.create({
+    data: {
+      conversationId: conversation.id,
+      direction: "outbound",
+      body: initialGreeting(business),
+    },
+  });
+  await prisma.message.create({
+    data: { conversationId: conversation.id, direction: "inbound", body },
+  });
+
+  await advanceConversation(conversation.id, { skipSend: true });
+  return conversation.id;
 }
