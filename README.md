@@ -91,10 +91,13 @@ Customer text ─▶ Twilio SMS webhook ─▶ log inbound ─▶ Claude engine 
 ```bash
 npm install
 cp .env.example .env.local      # fill in real values (see below)
-npm run db:push                 # create tables (needs a reachable Postgres)
-npm run db:seed                 # seed one demo business + workers
+npm run db:migrate              # apply migrations (needs a reachable Postgres)
+npm run db:seed                 # seed one demo business + workers + a login
 npm run dev                     # http://localhost:3000
 ```
+
+> New to the repo? [`docs/RUN_FROM_SCRATCH.md`](docs/RUN_FROM_SCRATCH.md) walks
+> through this on a fresh Mac step by step, including how to get Postgres.
 
 ### Environment variables
 

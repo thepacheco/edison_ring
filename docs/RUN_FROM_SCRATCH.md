@@ -21,11 +21,17 @@ psql --version   # Postgres client (optional but handy)
 ```
 
 - **Node 20+** — install from [nodejs.org](https://nodejs.org) or via `nvm`.
-- **Git** — [git-scm.com](https://git-scm.com).
-- **A Postgres database.** Two easy options:
+  On a Mac the easiest path is Homebrew: `brew install node`.
+- **Git** — preinstalled on macOS (or `brew install git`).
+- **A Postgres database.** Pick one:
   - **Cloud (recommended, zero install):** a free [Neon](https://neon.tech)
     project. Copy its connection string.
-  - **Local via Docker:** `docker run --name edison-pg -e POSTGRES_PASSWORD=edison -e POSTGRES_DB=edison -p 5432:5432 -d postgres:16`
+  - **Mac / Homebrew:** `brew install postgresql@16 && brew services start postgresql@16`,
+    then `createdb edison`. Your connection string is
+    `postgresql://$(whoami)@localhost:5432/edison?schema=public` (Homebrew Postgres
+    has no password for your Mac user).
+  - **Docker** (Docker Desktop must be running):
+    `docker run --name edison-pg -e POSTGRES_PASSWORD=edison -e POSTGRES_DB=edison -p 5432:5432 -d postgres:16`
 
 ---
 
@@ -62,9 +68,12 @@ stay blank for the first local run.
 
 ```bash
 # Neon: DATABASE_URL = the POOLED string (host has "-pooler"), DIRECT_URL = the direct one.
-# Local Docker: use the same string for both.
+# Local Docker or Homebrew Postgres: use the same string for both.
+# Docker (from the run command above):
 DATABASE_URL="postgresql://postgres:edison@localhost:5432/edison?schema=public"
 DIRECT_URL="postgresql://postgres:edison@localhost:5432/edison?schema=public"
+# Homebrew Postgres instead? Use your Mac username and no password, e.g.:
+#   postgresql://YOUR_MAC_USERNAME@localhost:5432/edison?schema=public
 ```
 
 **Claude (for live AI replies)** — optional for the very first boot, required to
