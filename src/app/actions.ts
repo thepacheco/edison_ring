@@ -101,6 +101,26 @@ export async function signupAction(formData: FormData) {
   });
 
   await createSession(user.id);
+
+  // Welcome / account-confirmation email (best-effort; degrades if email unset).
+  const { emailConfigured, sendEmail } = await import("@/lib/email");
+  if (emailConfigured()) {
+    const base = process.env.APP_BASE_URL || "http://localhost:3000";
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Welcome to Edison 🎉",
+        html: `<p>Hi ${name.replace(/</g, "&lt;")},</p>
+<p>Your Edison account is ready — you're all set to stop losing missed calls.</p>
+<p><b>Next step:</b> finish setup so we can rescue your calls:</p>
+<p><a href="${base}/setup">Complete setup →</a></p>
+<p>Questions? Just reply to this email.</p>`,
+      });
+    } catch (err) {
+      console.error("welcome email failed:", err);
+    }
+  }
+
   redirect("/billing?welcome=1");
 }
 

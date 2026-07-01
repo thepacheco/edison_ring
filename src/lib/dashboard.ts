@@ -38,6 +38,7 @@ export interface DashboardData {
   needsFollowup: number;
   recentLeads: RecentLead[];
   upcoming: UpcomingAppt[]; // next booked appointments
+  onboarding: { setupDone: boolean; hoursSet: boolean; hasWorkers: boolean; complete: boolean };
   trend: TrendPoint[]; // last 8 weeks
   funnel: { leads: number; engaged: number; booked: number }; // this month
   paidForItself: boolean;
@@ -87,6 +88,7 @@ const DEMO: DashboardData = {
     { label: "6/24", leads: 27, booked: 14, recovered: 4200 },
   ],
   funnel: { leads: 62, engaged: 41, booked: 14 },
+  onboarding: { setupDone: true, hoursSet: true, hasWorkers: true, complete: true },
   upcoming: [
     { id: "demo-1", name: "Marcus Reyes", whenLabel: "Today · 4:00 PM", summary: "AC not cooling upstairs" },
     { id: "demo-2", name: "Priya Shah", whenLabel: "Tomorrow · 9:00 AM", summary: "Furnace tune-up" },
@@ -145,7 +147,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     const windowStart = new Date(now.getTime() - WEEKS * MS_WEEK);
     const avgTicket = Number(business.avgTicketPrice) || 0;
 
-    const [bookedThisMonth, usage, needsFollowup, recent, windowConvos, upcomingRaw] =
+    const [bookedThisMonth, usage, needsFollowup, recent, windowConvos, upcomingRaw, workerCount] =
       await Promise.all([
         prisma.conversation.findMany({
           where: {
@@ -185,6 +187,7 @@ export async function getDashboardData(): Promise<DashboardData> {
           take: 4,
           select: { id: true, customerName: true, customerPhone: true, bookedSlot: true, summary: true },
         }),
+        prisma.worker.count({ where: { businessId: business.id } }),
       ]);
 
     // Weekly trend (oldest → newest) from the 8-week window.
@@ -210,6 +213,17 @@ export async function getDashboardData(): Promise<DashboardData> {
       leads: monthConvos.length,
       engaged: monthConvos.filter((c) => (c.exchangeCount ?? 0) >= 1).length,
       booked: monthConvos.filter((c) => c.status === "booked").length,
+    };
+
+    const hoursObj = (business.businessHours as Record<string, { open?: string } | null> | null) ?? {};
+    const hoursSet = Object.values(hoursObj).some((v) => v?.open);
+    const setupDone = business.setupCompleted;
+    const hasWorkers = workerCount > 0;
+    const onboarding = {
+      setupDone,
+      hoursSet,
+      hasWorkers,
+      complete: setupDone && hoursSet,
     };
 
     const upcoming: UpcomingAppt[] = upcomingRaw.map((c) => {
@@ -241,6 +255,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       conversationLimit: business.conversationLimit,
       needsFollowup,
       upcoming,
+      onboarding,
       trend,
       funnel,
       paidForItself: recovered >= subscriptionCost,
