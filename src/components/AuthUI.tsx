@@ -24,7 +24,7 @@ export function AuthShell({
         style={{
           width: "100%",
           maxWidth: 420,
-          background: "#fff",
+          background: "var(--card)",
           border: "1px solid var(--line)",
           borderRadius: 18,
           boxShadow: "0 30px 70px -30px rgba(20,24,33,.28)",

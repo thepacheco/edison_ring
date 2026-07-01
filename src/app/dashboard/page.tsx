@@ -56,7 +56,7 @@ export default async function DashboardPage() {
           style={{
             width: "100%",
             maxWidth: 760,
-            background: "#fff",
+            background: "var(--card)",
             border: "1px solid var(--line)",
             borderRadius: 20,
             boxShadow: "0 18px 44px -28px rgba(91,70,249,.35)",
@@ -232,7 +232,7 @@ export default async function DashboardPage() {
           style={{
             width: "100%",
             maxWidth: 760,
-            background: "#fff",
+            background: "var(--card)",
             border: "1px solid var(--line)",
             borderRadius: 16,
             overflow: "hidden",
@@ -277,7 +277,7 @@ function StatCard({ label, children }: { label: string; children: React.ReactNod
     <div
       style={{
         flex: "1 1 200px",
-        background: "#fff",
+        background: "var(--card)",
         border: "1px solid var(--line)",
         borderRadius: 14,
         padding: "16px 18px",

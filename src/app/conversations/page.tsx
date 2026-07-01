@@ -33,7 +33,7 @@ export default async function ConversationsPage() {
         </h1>
         <div
           style={{
-            background: "#fff",
+            background: "var(--card)",
             border: "1px solid var(--line)",
             borderRadius: 16,
             overflow: "hidden",
