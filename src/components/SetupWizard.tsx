@@ -171,7 +171,10 @@ export function SetupWizard({
           >
             Once forwarding is set, tap <b>Continue</b> to run a live test.
           </div>
-          <PrimaryButton onClick={() => setStep(3)}>Continue →</PrimaryButton>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <BackButton onClick={() => setStep(1)} />
+            <PrimaryButton onClick={() => setStep(3)}>Continue →</PrimaryButton>
+          </div>
         </Panel>
       )}
 
@@ -226,6 +229,7 @@ export function SetupWizard({
             >
               Troubleshoot
             </button>
+            <BackButton onClick={() => setStep(2)} />
           </div>
         </Panel>
       )}
@@ -397,6 +401,7 @@ function PrimaryButton({ children, onClick }: { children: React.ReactNode; onCli
     <button
       onClick={onClick}
       style={{
+        flex: 1,
         width: "100%",
         height: 52,
         marginTop: 18,
@@ -410,6 +415,29 @@ function PrimaryButton({ children, onClick }: { children: React.ReactNode; onCli
       }}
     >
       {children}
+    </button>
+  );
+}
+
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        height: 52,
+        marginTop: 18,
+        padding: "0 20px",
+        border: "1px solid var(--line)",
+        borderRadius: 13,
+        background: "var(--card)",
+        color: "var(--muted)",
+        fontWeight: 600,
+        fontSize: 15,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+      }}
+    >
+      ‹ Back
     </button>
   );
 }

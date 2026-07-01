@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
@@ -87,30 +88,27 @@ export default async function BillingPage({
           </div>
         </Card>
 
-        {/* connect calendar */}
+        {/* scheduling — built-in Edison calendar */}
         <div style={{ marginTop: 16 }}>
           <Card>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14.5 }}>Google Calendar</div>
-                <div style={{ fontSize: 12.5, color: "var(--faint)", marginTop: 2 }}>
-                  {calendarConnected
-                    ? "Connected — Edison proposes real open slots and books them."
-                    : "Connect so Edison can check availability and book jobs."}
+                <div style={{ fontWeight: 700, fontSize: 14.5 }}>Scheduling — built in ✓</div>
+                <div style={{ fontSize: 12.5, color: "var(--faint)", marginTop: 2, maxWidth: 460 }}>
+                  Edison books jobs into its own calendar from your business hours — no
+                  account to connect. See them under Calendar.
+                  {googleConfigured() && !calendarConnected && (
+                    <> Prefer Google? <a href="/api/google/connect" style={{ color: "var(--indigo)" }}>sync it (optional)</a>.</>
+                  )}
+                  {calendarConnected && <> Also synced to Google.</>}
                 </div>
               </div>
-              {calendarConnected ? (
-                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--green)", background: "var(--green-soft)", borderRadius: 20, padding: "6px 13px" }}>
-                  ✓ Connected
-                </span>
-              ) : (
-                <a
-                  href="/api/google/connect"
-                  style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", background: "var(--ink)", borderRadius: 10, padding: "10px 18px" }}
-                >
-                  {googleConfigured() ? "Connect" : "Connect (needs setup)"}
-                </a>
-              )}
+              <Link
+                href="/calendar"
+                style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", background: "var(--ink)", borderRadius: 10, padding: "10px 18px" }}
+              >
+                Open calendar →
+              </Link>
             </div>
           </Card>
         </div>

@@ -15,12 +15,14 @@ export function AreaTrend({
   stroke = "var(--indigo)",
   gradId = "areaGrad",
   format = (n: number) => String(n),
+  labelColor = "var(--faint)",
 }: {
   points: Pt[];
   height?: number;
   stroke?: string;
   gradId?: string;
   format?: (n: number) => string;
+  labelColor?: string;
 }) {
   const n = points.length;
   const max = Math.max(1, ...points.map((p) => p.value));
@@ -57,7 +59,7 @@ export function AreaTrend({
           </div>
         )}
       </div>
-      <Labels points={points} />
+      <Labels points={points} color={labelColor} />
     </div>
   );
 }
@@ -68,11 +70,13 @@ export function GroupedBars({
   height = 130,
   aColor = "var(--indigo-soft)",
   bColor = "var(--indigo)",
+  labelColor = "var(--faint)",
 }: {
   points: { label: string; a: number; b: number }[];
   height?: number;
   aColor?: string;
   bColor?: string;
+  labelColor?: string;
 }) {
   const max = Math.max(1, ...points.flatMap((p) => [p.a, p.b]));
   return (
@@ -85,7 +89,7 @@ export function GroupedBars({
           </div>
         ))}
       </div>
-      <Labels points={points.map((p) => ({ label: p.label, value: p.a }))} />
+      <Labels points={points.map((p) => ({ label: p.label, value: p.a }))} color={labelColor} />
     </div>
   );
 }
@@ -145,14 +149,14 @@ export function Funnel({
   );
 }
 
-function Labels({ points }: { points: Pt[] }) {
+function Labels({ points, color = "var(--faint)" }: { points: Pt[]; color?: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
       {points.map((p, i) => (
         <span
           key={i}
           className="mono"
-          style={{ fontSize: 10, color: "var(--faint)", flex: 1, textAlign: "center" }}
+          style={{ fontSize: 10, color, flex: 1, textAlign: "center" }}
         >
           {p.label}
         </span>
