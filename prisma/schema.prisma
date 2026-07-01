@@ -137,6 +137,7 @@ model Conversation {
   assignedWorker   Worker?   @relation(fields: [assignedWorkerId], references: [id])
   bookedSlot       DateTime?
   exchangeCount    Int       @default(0) // number of customer<->AI back-and-forths
+  contactedAt      DateTime? // owner/worker marked "I've reached out"
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

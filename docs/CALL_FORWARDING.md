@@ -51,7 +51,18 @@ support calls.
 | **RingCentral** | In app: **Call Handling → Forward to** the Edison number | Remove the rule |
 | **Grasshopper** | In app: **Settings → Call Forwarding →** Edison number | Remove the number |
 | **Google Voice** | **Voice Settings → Calls →** forward to the Edison number | Unlink the number |
+| **Landline (copper)** | `*92EDISON` (forward on no-answer) | `*93` |
+| **Home/office VoIP** (Xfinity, Spectrum, Ooma, Vonage, Fios) | In the provider's app/site: **Call Forwarding → No Answer →** Edison number | Remove the rule |
 | **Other / not sure** | Contact support — we'll find the exact code | — |
+
+> **Not a cell phone?** Many shops run a **landline** or a **cable/VoIP home
+> phone**, and forwarding works differently:
+> - **Landline:** `*92` + the Edison number activates "forward on no answer";
+>   `*93` cancels. These codes vary by local phone company — if `*92` doesn't
+>   take, call them and ask to enable **"Call Forwarding No Answer"** to the
+>   Edison number.
+> - **VoIP / cable phone:** there's no dial code; set it in the provider's app or
+>   website under Call Forwarding → No Answer (or Busy).
 
 > ⚠️ Carrier codes change and vary by plan/region. **Verify the exact code with
 > the carrier** before onboarding at scale. The definitive list the app uses

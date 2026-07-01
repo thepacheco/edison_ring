@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
 import { AppNav } from "@/components/AppNav";
+import { markContactedAction, markStatusAction } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -171,13 +172,45 @@ export default async function ConversationDetailPage({
             Text from my phone
           </a>
         </div>
+        {/* status controls — no in-app reply; you call/text, then mark the lead */}
+        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+          <form action={markContactedAction} style={{ flex: "1 1 160px" }}>
+            <input type="hidden" name="conversationId" value={c!.id} />
+            <input type="hidden" name="contacted" value={c!.contactedAt ? "false" : "true"} />
+            <button type="submit" style={statusBtn(!!c!.contactedAt)}>
+              {c!.contactedAt ? "✓ Contacted — undo" : "Mark contacted"}
+            </button>
+          </form>
+          <form action={markStatusAction} style={{ flex: "1 1 160px" }}>
+            <input type="hidden" name="conversationId" value={c!.id} />
+            <input type="hidden" name="status" value={c!.status === "closed" ? "new" : "closed"} />
+            <button type="submit" style={statusBtn(false)}>
+              {c!.status === "closed" ? "Reopen lead" : "Mark closed"}
+            </button>
+          </form>
+        </div>
         <p style={{ fontSize: 12, color: "var(--faint)", textAlign: "center", marginTop: 10 }}>
-          This is a read-only view of the SMS thread. To reply directly, text the
-          customer from your own phone.
+          This is a read-only view of the SMS thread — Edison&apos;s AI handles the
+          texting. To reply yourself, call or text the customer from your own phone,
+          then mark the lead contacted so your team knows it&apos;s handled.
         </p>
       </div>
     </main>
   );
+}
+
+function statusBtn(active: boolean): React.CSSProperties {
+  return {
+    width: "100%",
+    height: 42,
+    borderRadius: 12,
+    border: `1px solid ${active ? "#c4e9d7" : "var(--line)"}`,
+    background: active ? "var(--green-soft)" : "var(--card)",
+    color: active ? "var(--green)" : "var(--ink)",
+    fontSize: 13.5,
+    fontWeight: 600,
+    cursor: "pointer",
+  };
 }
 
 function Row({ label, value }: { label: string; value: string }) {

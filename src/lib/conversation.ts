@@ -4,7 +4,8 @@ import { anthropic, EDISON_MODEL } from "./anthropic";
 import { prisma } from "./prisma";
 import { sendSms } from "./twilio";
 import { pickWorker } from "./routing";
-import { findOpenSlots, createBooking, type Slot } from "./google";
+import { findOpenSlots, createBooking, googleConfigured, type Slot } from "./google";
+import { localOpenSlots } from "./calendar";
 
 // After this many customer messages without a booking, Edison stops trying to
 // resolve over text and hands off to a human.
@@ -233,12 +234,16 @@ export async function advanceConversation(
     assignedWorkerId = pickWorker(business, workers, firstInbound)?.id ?? null;
   }
 
-  // Pull live calendar slots so Edison can offer real times.
+  // Offer real open times. Use Google if the business connected it; otherwise
+  // fall back to Edison's built-in calendar (generated from business hours).
+  const usingGoogle = Boolean(business.googleRefreshToken) && googleConfigured();
   let slots: Slot[] = [];
   try {
-    slots = await findOpenSlots(business, { max: 3 });
+    slots = usingGoogle
+      ? await findOpenSlots(business, { max: 3 })
+      : await localOpenSlots(business, { max: 3 });
   } catch (err) {
-    console.error("findOpenSlots failed:", err);
+    console.error("open-slot lookup failed:", err);
   }
 
   const ai = await generateAiReply(business, workers, conversation.messages, slots);
@@ -252,21 +257,22 @@ export async function advanceConversation(
         iso: ai.selectedSlotIso,
         label: ai.selectedSlotIso,
       };
-    try {
-      await createBooking(business, {
-        startISO: slot.iso,
-        summary: `${ai.customerName ?? "New customer"} — ${ai.customerNeed}`,
-        description: `Booked by Edison from ${conversation.customerPhone}.`,
-      });
-      bookedSlot = new Date(slot.iso);
-      booked = true;
-    } catch (err) {
-      console.error("createBooking failed:", err);
-      // Still mark booked from the conversation's perspective; a human can
-      // reconcile the calendar.
-      bookedSlot = new Date(slot.iso);
-      booked = true;
+    // Only push to Google when it's connected; otherwise the booking lives in
+    // Edison's own calendar (the bookedSlot we set below).
+    if (usingGoogle) {
+      try {
+        await createBooking(business, {
+          startISO: slot.iso,
+          summary: `${ai.customerName ?? "New customer"} — ${ai.customerNeed}`,
+          description: `Booked by Edison from ${conversation.customerPhone}.`,
+        });
+      } catch (err) {
+        console.error("createBooking failed:", err);
+        // Still mark booked; a human can reconcile the external calendar.
+      }
     }
+    bookedSlot = new Date(slot.iso);
+    booked = true;
   } else if (ai.readyToBook) {
     booked = true; // agreed to a time, no live calendar to write to
   }

@@ -5,6 +5,7 @@ import { getCurrentBusiness } from "@/lib/auth";
 import { MoneyCounter } from "@/components/MoneyCounter";
 import { AppNav } from "@/components/AppNav";
 import { Toast } from "@/components/Toast";
+import { AreaTrend, GroupedBars, Funnel } from "@/components/Charts";
 import { runTestLeadAction } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -255,9 +256,99 @@ export default async function DashboardPage({
           </StatCard>
         </section>
 
-        {/* recent leads */}
+        {/* charts */}
         <section
           className="rise rise-2"
+          style={{ width: "100%", maxWidth: 760, display: "flex", gap: 14, flexWrap: "wrap" }}
+        >
+          <ChartCard title="Money recovered" subtitle="last 8 weeks" grow>
+            <AreaTrend
+              points={d.trend.map((t) => ({ label: t.label, value: t.recovered }))}
+              stroke="var(--green-bright)"
+              gradId="recGrad"
+              format={(n) => "$" + n.toLocaleString()}
+            />
+          </ChartCard>
+          <ChartCard title="Leads vs booked" subtitle="weekly" grow>
+            <GroupedBars
+              points={d.trend.map((t) => ({ label: t.label, a: t.leads, b: t.booked }))}
+            />
+            <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: 11.5, color: "var(--faint)" }}>
+              <Legend color="var(--indigo-soft)" label="Leads" />
+              <Legend color="var(--indigo)" label="Booked" />
+            </div>
+          </ChartCard>
+        </section>
+
+        {/* funnel */}
+        <section
+          className="rise rise-3"
+          style={{
+            width: "100%",
+            maxWidth: 760,
+            background: "var(--card)",
+            border: "1px solid var(--line)",
+            borderRadius: 16,
+            padding: "18px 20px",
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>This month at a glance</div>
+          <div style={{ fontSize: 12.5, color: "var(--faint)", marginBottom: 16 }}>
+            How many missed-call leads turn into booked jobs.
+          </div>
+          <Funnel
+            stages={[
+              { label: "Leads (missed calls texted back)", value: d.funnel.leads, color: "var(--indigo)" },
+              { label: "Engaged (customer replied)", value: d.funnel.engaged, color: "#7c6cff" },
+              { label: "Booked", value: d.funnel.booked, color: "var(--green)" },
+            ]}
+          />
+        </section>
+
+        {/* upcoming appointments */}
+        <section
+          className="rise rise-3"
+          style={{
+            width: "100%",
+            maxWidth: 760,
+            background: "var(--card)",
+            border: "1px solid var(--line)",
+            borderRadius: 16,
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--line-soft)" }}>
+            <span style={{ fontWeight: 700, fontSize: 15 }}>Upcoming appointments</span>
+            <Link href="/calendar" style={{ fontSize: 13, color: "var(--indigo)", fontWeight: 600 }}>
+              Open calendar →
+            </Link>
+          </div>
+          {d.upcoming.length === 0 && (
+            <div style={{ padding: "22px 20px", fontSize: 14, color: "var(--faint)" }}>
+              No upcoming appointments yet. When Edison books a job, it shows up here and on the calendar.
+            </div>
+          )}
+          {d.upcoming.map((u, i) => (
+            <Link
+              key={u.id}
+              href={`/conversations/${u.id}`}
+              className="row-hover"
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 20px", borderBottom: i === d.upcoming.length - 1 ? "none" : "1px solid var(--line-soft)" }}
+            >
+              <div className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--indigo)", background: "var(--indigo-soft)", borderRadius: 8, padding: "6px 10px", whiteSpace: "nowrap" }}>
+                {u.whenLabel}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{u.name}</div>
+                <div style={{ fontSize: 12.5, color: "var(--faint)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.summary}</div>
+              </div>
+            </Link>
+          ))}
+        </section>
+
+        {/* recent leads */}
+        <section
+          className="rise rise-4"
           style={{
             width: "100%",
             maxWidth: 760,
@@ -320,6 +411,46 @@ export default async function DashboardPage({
   );
 }
 
+function ChartCard({
+  title,
+  subtitle,
+  grow,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  grow?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="lift"
+      style={{
+        flex: grow ? "1 1 320px" : "none",
+        background: "var(--card)",
+        border: "1px solid var(--line)",
+        borderRadius: 16,
+        padding: "16px 18px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
+        <span style={{ fontWeight: 700, fontSize: 14.5 }}>{title}</span>
+        {subtitle && <span style={{ fontSize: 11.5, color: "var(--faint)" }}>{subtitle}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+      <span style={{ width: 9, height: 9, borderRadius: 3, background: color }} />
+      {label}
+    </span>
+  );
+}
+
 function StatCard({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div
@@ -379,7 +510,18 @@ function LeadRow({ lead, last }: { lead: RecentLead; last: boolean }) {
         {lead.initials}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 600 }}>{lead.name}</div>
+        <div style={{ fontSize: 14.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>
+          {lead.name}
+          {lead.contacted && (
+            <span
+              className="mono"
+              title="You marked this lead contacted"
+              style={{ fontSize: 10, fontWeight: 700, color: "var(--green)", background: "var(--green-soft)", borderRadius: 20, padding: "1px 7px" }}
+            >
+              ✓ contacted
+            </span>
+          )}
+        </div>
         <div
           style={{
             fontSize: 13,
