@@ -1,5 +1,6 @@
 import { MarketingPage, Card } from "@/components/MarketingPage";
 import { contactAction } from "../actions";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -50,9 +51,9 @@ export default async function ContactPage({
                 style={{ border: "1px solid var(--line)", borderRadius: 10, padding: "11px 13px", fontSize: 14, fontFamily: "inherit", background: "var(--card)", color: "var(--ink)", resize: "vertical" }}
               />
             </label>
-            <button type="submit" style={{ background: "var(--indigo)", color: "#fff", border: "none", borderRadius: 11, padding: "12px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+            <SubmitButton style={{ background: "var(--indigo)", color: "#fff", border: "none", borderRadius: 11, padding: "12px", fontSize: 15, fontWeight: 700, cursor: "pointer" }} pendingText="Sending…">
               Send message
-            </button>
+            </SubmitButton>
           </form>
         </Card>
       </div>

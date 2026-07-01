@@ -13,6 +13,7 @@ import {
 } from "@/lib/pricing";
 import { googleConfigured } from "@/lib/google";
 import { startCheckoutAction, billingPortalAction } from "../actions";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -148,8 +149,8 @@ export default async function BillingPage({
                       <div className="mono" style={{ fontSize: 13, color: "var(--muted)" }}>
                         ${p.monthly}/mo · {p.includedConversations} conv.
                       </div>
-                      <button
-                        type="submit"
+                      <SubmitButton
+                        pendingText="Loading…"
                         style={{
                           marginTop: "auto",
                           border: "none",
@@ -163,7 +164,7 @@ export default async function BillingPage({
                         }}
                       >
                         {current ? "Manage" : "Switch & start trial"}
-                      </button>
+                      </SubmitButton>
                     </div>
                   </form>
                 );

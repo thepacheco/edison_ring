@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requestResetAction } from "../actions";
 import { AuthShell, Field } from "@/components/AuthUI";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -29,12 +30,12 @@ export default async function ForgotPage({
       ) : (
         <form action={requestResetAction} style={{ display: "flex", flexDirection: "column", gap: 13 }}>
           <Field label="Work email" name="email" type="email" placeholder="owner@business.com" required />
-          <button
-            type="submit"
+          <SubmitButton
             style={{ background: "var(--indigo)", color: "#fff", border: "none", borderRadius: 11, padding: "13px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}
+            pendingText="Sending…"
           >
             Send reset link
-          </button>
+          </SubmitButton>
         </form>
       )}
       <p style={{ fontSize: 13, color: "var(--muted)", textAlign: "center" }}>
