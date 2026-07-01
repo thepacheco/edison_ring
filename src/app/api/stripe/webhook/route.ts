@@ -41,6 +41,10 @@ export async function POST(req: Request) {
       }
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
+        const affected = await prisma.business.findMany({
+          where: { stripeSubId: sub.id },
+          include: { locations: true },
+        });
         await prisma.business.updateMany({
           where: { stripeSubId: sub.id },
           data: {
@@ -50,6 +54,20 @@ export async function POST(req: Request) {
               (sub.cancellation_details?.reason as string | undefined) ?? null,
           },
         });
+        // Release the provisioned Twilio number(s) so we stop paying for them.
+        const { releaseNumber } = await import("@/lib/twilio");
+        for (const b of affected) {
+          const numbers = [b.twilioNumber, ...b.locations.map((l) => l.twilioNumber)];
+          for (const num of numbers) {
+            if (num && !num.startsWith("pending-")) {
+              try {
+                await releaseNumber(num);
+              } catch (err) {
+                console.error("Failed to release number on cancel:", num, err);
+              }
+            }
+          }
+        }
         break;
       }
       case "invoice.payment_failed": {

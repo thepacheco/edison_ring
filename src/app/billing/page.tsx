@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
@@ -12,6 +13,8 @@ import {
 } from "@/lib/pricing";
 import { googleConfigured } from "@/lib/google";
 import { startCheckoutAction, billingPortalAction } from "../actions";
+import { SubmitButton } from "@/components/SubmitButton";
+import { carrierById } from "@/lib/carriers";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +40,7 @@ export default async function BillingPage({
   const pct = Math.min(100, Math.round((used / limit) * 100));
   const cost = subscriptionCost(business!.plan, Math.max(1, locationCount));
   const calendarConnected = Boolean(business!.googleRefreshToken);
+  const deactivate = business!.carrier ? carrierById(business!.carrier)?.deactivateCode : null;
 
   return (
     <main style={{ minHeight: "100vh", background: "var(--bg)" }}>
@@ -87,30 +91,27 @@ export default async function BillingPage({
           </div>
         </Card>
 
-        {/* connect calendar */}
+        {/* scheduling — built-in Edison calendar */}
         <div style={{ marginTop: 16 }}>
           <Card>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14.5 }}>Google Calendar</div>
-                <div style={{ fontSize: 12.5, color: "var(--faint)", marginTop: 2 }}>
-                  {calendarConnected
-                    ? "Connected — Edison proposes real open slots and books them."
-                    : "Connect so Edison can check availability and book jobs."}
+                <div style={{ fontWeight: 700, fontSize: 14.5 }}>Scheduling — built in ✓</div>
+                <div style={{ fontSize: 12.5, color: "var(--faint)", marginTop: 2, maxWidth: 460 }}>
+                  Edison books jobs into its own calendar from your business hours — no
+                  account to connect. See them under Calendar.
+                  {googleConfigured() && !calendarConnected && (
+                    <> Prefer Google? <a href="/api/google/connect" style={{ color: "var(--indigo)" }}>sync it (optional)</a>.</>
+                  )}
+                  {calendarConnected && <> Also synced to Google.</>}
                 </div>
               </div>
-              {calendarConnected ? (
-                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--green)", background: "var(--green-soft)", borderRadius: 20, padding: "6px 13px" }}>
-                  ✓ Connected
-                </span>
-              ) : (
-                <a
-                  href="/api/google/connect"
-                  style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", background: "var(--ink)", borderRadius: 10, padding: "10px 18px" }}
-                >
-                  {googleConfigured() ? "Connect" : "Connect (needs setup)"}
-                </a>
-              )}
+              <Link
+                href="/calendar"
+                style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", background: "var(--ink)", borderRadius: 10, padding: "10px 18px" }}
+              >
+                Open calendar →
+              </Link>
             </div>
           </Card>
         </div>
@@ -150,8 +151,8 @@ export default async function BillingPage({
                       <div className="mono" style={{ fontSize: 13, color: "var(--muted)" }}>
                         ${p.monthly}/mo · {p.includedConversations} conv.
                       </div>
-                      <button
-                        type="submit"
+                      <SubmitButton
+                        pendingText="Loading…"
                         style={{
                           marginTop: "auto",
                           border: "none",
@@ -165,7 +166,7 @@ export default async function BillingPage({
                         }}
                       >
                         {current ? "Manage" : "Switch & start trial"}
-                      </button>
+                      </SubmitButton>
                     </div>
                   </form>
                 );
@@ -198,6 +199,32 @@ export default async function BillingPage({
             Manage payment method &amp; invoices →
           </button>
         </form>
+
+        {/* cancel service walkthrough */}
+        <details style={{ marginTop: 20, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 14, padding: "14px 18px" }}>
+          <summary style={{ cursor: "pointer", fontSize: 13.5, fontWeight: 700, color: "var(--muted)" }}>
+            Cancel service
+          </summary>
+          <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6, marginTop: 12 }}>
+            <p style={{ margin: "0 0 10px" }}>Sorry to see you go. Here&apos;s exactly what happens and what to do:</p>
+            <ol style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 8 }}>
+              <li>
+                <b>Cancel your subscription</b> in the billing portal (button above → Cancel plan).
+                You keep access until the end of the paid period.
+              </li>
+              <li>
+                <b>Turn off call forwarding</b> so your phone stops rolling calls to Edison.
+                {deactivate
+                  ? <> On your line, dial <span className="mono" style={{ background: "var(--line-soft)", padding: "1px 6px", borderRadius: 5 }}>{deactivate}</span> to cancel forwarding.</>
+                  : <> Dial your carrier&apos;s &quot;cancel call forwarding&quot; code (often <span className="mono">*73</span> or <span className="mono">##004#</span>), or turn it off in your provider&apos;s app.</>}
+              </li>
+              <li>
+                <b>Your Edison number is released</b> back to the carrier automatically when the
+                subscription ends, so you&apos;re not billed for it.
+              </li>
+            </ol>
+          </div>
+        </details>
       </div>
     </main>
   );

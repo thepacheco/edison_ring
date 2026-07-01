@@ -12,7 +12,7 @@ const STEPS = [
 
 const FEATURES = [
   ["Real conversations", "Powered by AI, tuned to sound like your shop — never robotic."],
-  ["Calendar booking", "Connects to Google Calendar and books into real open slots."],
+  ["Calendar booking", "Built-in calendar books jobs into your real open slots — no account to connect (Google sync optional)."],
   ["Worker routing", "Round-robin, keyword, or straight to the owner — plus call-out backup."],
   ["Multi-location", "One dashboard across every location, with a per-location breakdown."],
   ["Paid-for-itself tracker", "See recovered revenue vs. your subscription, live."],

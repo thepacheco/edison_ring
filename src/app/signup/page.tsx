@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signupAction } from "../actions";
 import { PLANS } from "@/lib/pricing";
 import { AuthShell, Field, Err, labelStyle, inputStyle, primaryBtn } from "@/components/AuthUI";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -41,9 +42,9 @@ export default async function SignupPage({
             ))}
           </select>
         </label>
-        <button type="submit" style={primaryBtn}>
+        <SubmitButton style={primaryBtn} pendingText="Creating your account…">
           Create account →
-        </button>
+        </SubmitButton>
         <p style={{ fontSize: 11.5, color: "var(--faint)", textAlign: "center", lineHeight: 1.5, margin: 0 }}>
           By creating an account you agree to our{" "}
           <Link href="/terms" style={{ color: "var(--indigo)" }}>Terms</Link> and{" "}

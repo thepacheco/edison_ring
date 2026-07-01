@@ -65,7 +65,7 @@ export function AppNav({
             Edison
           </span>
         </Link>
-        <nav style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+        <nav style={{ display: "flex", alignItems: "center", gap: 4, overflowX: "auto", maxWidth: "100%", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
           {LINKS.map((l) => {
             const on = l.href === active;
             return (
@@ -80,6 +80,8 @@ export function AppNav({
                   background: on ? "var(--indigo-soft)" : "transparent",
                   padding: "7px 13px",
                   borderRadius: 8,
+                  flex: "none",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {l.label}

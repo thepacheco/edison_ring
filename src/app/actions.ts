@@ -101,6 +101,26 @@ export async function signupAction(formData: FormData) {
   });
 
   await createSession(user.id);
+
+  // Welcome / account-confirmation email (best-effort; degrades if email unset).
+  const { emailConfigured, sendEmail } = await import("@/lib/email");
+  if (emailConfigured()) {
+    const base = process.env.APP_BASE_URL || "http://localhost:3000";
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Welcome to Edison 🎉",
+        html: `<p>Hi ${name.replace(/</g, "&lt;")},</p>
+<p>Your Edison account is ready — you're all set to stop losing missed calls.</p>
+<p><b>Next step:</b> finish setup so we can rescue your calls:</p>
+<p><a href="${base}/setup">Complete setup →</a></p>
+<p>Questions? Just reply to this email.</p>`,
+      });
+    } catch (err) {
+      console.error("welcome email failed:", err);
+    }
+  }
+
   redirect("/billing?welcome=1");
 }
 
@@ -341,21 +361,31 @@ export async function updateSettingsAction(formData: FormData) {
   const owner = await requireOwner();
   if (!owner) redirect("/settings?error=forbidden");
   const business = owner.business;
+  const tab = String(formData.get("tab") || "");
 
-  const avgTicket = Number(formData.get("avgTicketPrice"));
-  const routingMode = String(formData.get("routingMode") || business!.routingMode);
-  const greeting = String(formData.get("greeting") || "");
-  const voice = String(formData.get("voice") || "friendly");
+  // Partial update: each settings sub-tab only submits its own fields, so we
+  // only touch what's present (avoids one tab wiping another's values).
+  const data: Record<string, unknown> = {};
 
-  await prisma.business.update({
-    where: { id: business!.id },
-    data: {
-      avgTicketPrice: Number.isFinite(avgTicket) ? avgTicket : business!.avgTicketPrice,
-      routingMode,
-      aiToneSettings: { greeting: greeting || undefined, voice },
-    },
-  });
-  redirect("/settings?saved=1");
+  if (formData.has("avgTicketPrice")) {
+    const v = Number(formData.get("avgTicketPrice"));
+    if (Number.isFinite(v)) data.avgTicketPrice = v;
+  }
+  if (formData.has("routingMode")) {
+    data.routingMode = String(formData.get("routingMode"));
+  }
+  if (formData.has("greeting") || formData.has("voice")) {
+    const existing = (business.aiToneSettings as { greeting?: string; voice?: string } | null) ?? {};
+    data.aiToneSettings = {
+      greeting: formData.has("greeting") ? String(formData.get("greeting")) || undefined : existing.greeting,
+      voice: formData.has("voice") ? String(formData.get("voice")) : existing.voice ?? "friendly",
+    };
+  }
+
+  if (Object.keys(data).length > 0) {
+    await prisma.business.update({ where: { id: business.id }, data });
+  }
+  redirect(`/settings?${tab ? `tab=${tab}&` : ""}saved=1`);
 }
 
 export async function addWorkerAction(formData: FormData) {

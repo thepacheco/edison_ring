@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { loginAction } from "../actions";
 import { AuthShell, Field, Err } from "@/components/AuthUI";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -21,12 +22,12 @@ export default async function LoginPage({
         {error && <Err msg="Incorrect email or password." />}
         <Field label="Work email" name="email" type="email" placeholder="owner@business.com" required />
         <Field label="Password" name="password" type="password" placeholder="••••••••" required />
-        <button
-          type="submit"
+        <SubmitButton
           style={{ background: "var(--indigo)", color: "#fff", border: "none", borderRadius: 11, padding: "13px", fontSize: 15, fontWeight: 700, cursor: "pointer", marginTop: 4 }}
+          pendingText="Logging in…"
         >
           Log in →
-        </button>
+        </SubmitButton>
       </form>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
         <Link href="/forgot" style={{ color: "var(--muted)" }}>Forgot password?</Link>

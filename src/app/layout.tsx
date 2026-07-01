@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { getTheme } from "@/lib/theme";
 
@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   title: "Edison — Missed Call Rescue",
   description:
     "Edison auto-texts missed callers, books the job, and puts it on your calendar. Stop losing jobs to voicemail.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default async function RootLayout({

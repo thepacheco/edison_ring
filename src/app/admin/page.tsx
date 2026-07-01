@@ -2,6 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth";
 import { getAdminMetrics, planLabel } from "@/lib/admin";
+import { AreaTrend, GroupedBars } from "@/components/Charts";
+
+const DARK_LABEL = "#8a93a3";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +83,31 @@ export default async function AdminPage() {
           <Big label="Gross margin" value={money(m.margin)} accent="#3fb984" />
         </div>
 
+        {/* growth charts */}
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 14 }}>
+          <ChartPanel title="Monthly recurring revenue" subtitle="last 6 months">
+            <AreaTrend
+              points={m.growth.map((g) => ({ label: g.label, value: g.mrr }))}
+              stroke="#7c6cff"
+              gradId="mrrGrad"
+              labelColor={DARK_LABEL}
+              format={(n) => "$" + n.toLocaleString()}
+            />
+          </ChartPanel>
+          <ChartPanel title="Subscriber growth" subtitle="total vs. new / mo">
+            <GroupedBars
+              points={m.growth.map((g) => ({ label: g.label, a: g.subscribers, b: g.newSignups }))}
+              aColor="#2c2f57"
+              bColor="#3fb984"
+              labelColor={DARK_LABEL}
+            />
+            <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: 11.5, color: DARK_LABEL }}>
+              <LegendDot color="#2c2f57" label="Total subscribers" />
+              <LegendDot color="#3fb984" label="New this month" />
+            </div>
+          </ChartPanel>
+        </div>
+
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
           {/* by plan + conversion */}
           <Panel title="Subscribers by plan" grow>
@@ -145,6 +173,27 @@ function Big({ label, value, accent }: { label: string; value: string; accent?: 
         {value}
       </div>
     </div>
+  );
+}
+
+function ChartPanel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div style={{ flex: "1 1 320px", background: "#161922", border: "1px solid #20242f", borderRadius: 14, padding: "16px 18px" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#c7cbd4" }}>{title}</span>
+        {subtitle && <span style={{ fontSize: 11, color: "#6b7280" }}>{subtitle}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+      <span style={{ width: 9, height: 9, borderRadius: 3, background: color }} />
+      {label}
+    </span>
   );
 }
 

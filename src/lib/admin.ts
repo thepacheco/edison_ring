@@ -2,6 +2,13 @@ import { prisma } from "./prisma";
 import { currentMonth } from "./usage";
 import { subscriptionCost, planFor, COGS, OVERAGE_RATE } from "./pricing";
 
+export interface GrowthPoint {
+  label: string; // month, e.g. "Jul"
+  subscribers: number; // cumulative
+  mrr: number; // cumulative
+  newSignups: number;
+}
+
 export interface AdminMetrics {
   mrr: number;
   activeSubscribers: number;
@@ -12,6 +19,7 @@ export interface AdminMetrics {
   conversationsThisMonth: number;
   estCogs: number;
   margin: number; // mrr - estCogs
+  growth: GrowthPoint[]; // last 6 months
   nearLimit: { name: string; used: number; limit: number }[];
   failedPayments: { name: string; email: string }[];
   demo: boolean;
@@ -34,6 +42,14 @@ const DEMO: AdminMetrics = {
   conversationsThisMonth: 3120,
   estCogs: 168.4,
   margin: 1173.6,
+  growth: [
+    { label: "Feb", subscribers: 3, mrr: 197, newSignups: 3 },
+    { label: "Mar", subscribers: 6, mrr: 434, newSignups: 3 },
+    { label: "Apr", subscribers: 9, mrr: 711, newSignups: 3 },
+    { label: "May", subscribers: 12, mrr: 948, newSignups: 3 },
+    { label: "Jun", subscribers: 15, mrr: 1185, newSignups: 3 },
+    { label: "Jul", subscribers: 17, mrr: 1342, newSignups: 2 },
+  ],
   nearLimit: [{ name: "Rivera Comfort HVAC", used: 247, limit: 300 }],
   failedPayments: [{ name: "Vela Auto", email: "owner@vela.test" }],
   demo: true,
@@ -103,6 +119,27 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
     const twilioCost = conversationsThisMonth * COGS.twilioPerConversation;
     const estCogs = Math.round((anthropicCost + twilioCost) * 100) / 100;
 
+    // Growth over the last 6 months (approximated from signup dates + current
+    // plan cost — good enough for a trend without historical snapshots).
+    const costOf = (b: (typeof businesses)[number]) =>
+      subscriptionCost(b.plan, Math.max(1, b._count.locations));
+    const isPaying = (b: (typeof businesses)[number]) =>
+      b.subscriptionStatus === "active" ||
+      b.subscriptionStatus === "past_due" ||
+      b.subscriptionStatus === "trialing";
+    const growth: GrowthPoint[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const mStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      const existing = businesses.filter((b) => b.createdAt < mEnd && isPaying(b));
+      growth.push({
+        label: mStart.toLocaleString("en-US", { month: "short" }),
+        subscribers: existing.length,
+        mrr: Math.round(existing.reduce((s, b) => s + costOf(b), 0)),
+        newSignups: businesses.filter((b) => b.createdAt >= mStart && b.createdAt < mEnd).length,
+      });
+    }
+
     // near/over limit
     const usageRecords = await prisma.usageRecord.findMany({ where: { month } });
     const byBusiness = new Map(usageRecords.map((u) => [u.businessId, u]));
@@ -124,6 +161,7 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
       conversationsThisMonth,
       estCogs,
       margin: Math.round((mrr - estCogs) * 100) / 100,
+      growth,
       nearLimit,
       failedPayments,
       demo: false,

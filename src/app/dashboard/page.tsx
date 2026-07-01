@@ -65,6 +65,23 @@ export default async function DashboardPage({
           </div>
         )}
 
+        {/* getting-started checklist (new businesses) */}
+        {!d.demo && !d.onboarding.complete && (
+          <section
+            className="rise"
+            style={{ width: "100%", maxWidth: 760, background: "var(--card)", border: "1px solid var(--indigo)", borderRadius: 16, padding: "18px 22px" }}
+          >
+            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 2 }}>👋 Let&apos;s get you set up</div>
+            <div style={{ fontSize: 13, color: "var(--faint)", marginBottom: 14 }}>A couple quick steps and Edison starts rescuing calls.</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <ChecklistItem done={d.onboarding.setupDone} label="Forward your phone to Edison" href="/setup" cta="Set up" />
+              <ChecklistItem done={d.onboarding.hoursSet} label="Set your business hours" href="/settings?tab=business" cta="Add hours" />
+              <ChecklistItem done={d.onboarding.hasWorkers} label="Add your crew (optional)" href="/settings?tab=crew" cta="Add crew" />
+              <ChecklistItem done={false} label="Try it — run a test lead" href="#test-lead" cta="See below" muted />
+            </div>
+          </section>
+        )}
+
         {/* centerpiece — paid for itself tracker */}
         <section
           className="rise"
@@ -348,6 +365,7 @@ export default async function DashboardPage({
 
         {/* recent leads */}
         <section
+          id="test-lead"
           className="rise rise-4"
           style={{
             width: "100%",
@@ -408,6 +426,22 @@ export default async function DashboardPage({
         </section>
       </div>
     </main>
+  );
+}
+
+function ChecklistItem({ done, label, href, cta, muted }: { done: boolean; label: string; href: string; cta: string; muted?: boolean }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <span style={{ width: 22, height: 22, flex: "none", borderRadius: "50%", background: done ? "var(--green-soft)" : "var(--line-soft)", color: done ? "var(--green)" : "var(--faint)", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {done ? "✓" : ""}
+      </span>
+      <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: done ? "var(--faint)" : "var(--ink)", textDecoration: done ? "line-through" : "none" }}>{label}</span>
+      {!done && (
+        <Link href={href} style={{ fontSize: 12.5, fontWeight: 700, color: muted ? "var(--muted)" : "#fff", background: muted ? "transparent" : "var(--indigo)", border: muted ? "1px solid var(--line)" : "none", borderRadius: 8, padding: "6px 12px" }}>
+          {cta}
+        </Link>
+      )}
+    </div>
   );
 }
 
