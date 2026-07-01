@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { getTheme } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Edison — Missed Call Rescue",
   description:
-    "Edison auto-texts missed callers, books the job, and puts it on your calendar.",
+    "Edison auto-texts missed callers, books the job, and puts it on your calendar. Stop losing jobs to voicemail.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const theme = await getTheme();
   return (
-    <html lang="en">
+    <html lang="en" data-theme={theme}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

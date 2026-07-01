@@ -290,7 +290,7 @@ function Card({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#fff",
+        background: "var(--card)",
         border: "1px solid var(--line)",
         borderRadius: 16,
         padding: "8px 24px 20px",

@@ -212,7 +212,7 @@ function prettyStatus(s: string): string {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid var(--line)", borderRadius: 16, padding: "20px 22px" }}>
+    <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 16, padding: "20px 22px" }}>
       {children}
     </div>
   );

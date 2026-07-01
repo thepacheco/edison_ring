@@ -38,7 +38,7 @@ export default async function ConversationDetailPage({
         {/* summary header */}
         <div
           style={{
-            background: "#fff",
+            background: "var(--card)",
             border: "1px solid var(--line)",
             borderRadius: 16,
             padding: "18px 20px",
@@ -115,7 +115,7 @@ export default async function ConversationDetailPage({
                 style={{
                   alignSelf: inbound ? "flex-end" : "flex-start",
                   maxWidth: "82%",
-                  background: inbound ? "var(--indigo)" : "#fff",
+                  background: inbound ? "var(--indigo)" : "var(--card)",
                   color: inbound ? "#fff" : "var(--ink)",
                   border: inbound ? "none" : "1px solid var(--line)",
                   borderRadius: inbound ? "16px 16px 5px 16px" : "16px 16px 16px 5px",
@@ -148,7 +148,7 @@ export default async function ConversationDetailPage({
               justifyContent: "center",
               fontSize: 14,
               fontWeight: 600,
-              background: "#fff",
+              background: "var(--card)",
             }}
           >
             Call {name.split(" ")[0]}

@@ -184,6 +184,30 @@ export async function billingPortalAction() {
   redirect(portal.url);
 }
 
+export async function contactAction(formData: FormData) {
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("email") || "").trim();
+  const message = String(formData.get("message") || "").trim();
+  if (!name || !email || !message) redirect("/contact?sent=error");
+
+  const { emailConfigured, sendEmail } = await import("@/lib/email");
+  const to = process.env.CONTACT_EMAIL || process.env.EMAIL_FROM || "hello@edison.io";
+  if (emailConfigured()) {
+    try {
+      await sendEmail({
+        to,
+        subject: `New contact from ${name}`,
+        html: `<p><b>${name}</b> (${email}) wrote:</p><p>${message.replace(/</g, "&lt;")}</p>`,
+      });
+    } catch (err) {
+      console.error("contact email failed:", err);
+    }
+  } else {
+    console.log("Contact form (email not configured):", { name, email, message });
+  }
+  redirect("/contact?sent=ok");
+}
+
 export async function saveCarrierAction(formData: FormData) {
   const business = await getCurrentBusiness();
   if (!business) redirect("/login");

@@ -220,7 +220,7 @@ export function SetupWizard({
                 borderRadius: 12,
                 fontSize: 14,
                 fontWeight: 600,
-                background: "#fff",
+                background: "var(--card)",
                 cursor: "pointer",
               }}
             >
@@ -233,7 +233,7 @@ export function SetupWizard({
       {confirmed && (
         <div
           style={{
-            background: "#fff",
+            background: "var(--card)",
             border: "1px solid var(--line)",
             borderRadius: 18,
             padding: "40px 30px",
@@ -374,7 +374,7 @@ function Panel({
   return (
     <div
       style={{
-        background: "#fff",
+        background: "var(--card)",
         border: "1px solid var(--line)",
         borderRadius: 18,
         padding: "24px 24px 26px",
@@ -434,7 +434,7 @@ function CopyButton({ text }: { text: string }) {
         borderRadius: 11,
         fontSize: 14,
         fontWeight: 600,
-        background: "#fff",
+        background: "var(--card)",
         cursor: "pointer",
       }}
     >
