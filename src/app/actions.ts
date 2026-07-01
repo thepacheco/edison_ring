@@ -282,6 +282,70 @@ export async function updateSettingsAction(formData: FormData) {
   redirect("/settings?saved=1");
 }
 
+export async function addWorkerAction(formData: FormData) {
+  const business = await getCurrentBusiness();
+  if (!business) redirect("/login");
+  const name = String(formData.get("name") || "").trim();
+  const phoneNumber = String(formData.get("phoneNumber") || "").trim();
+  const keywords = String(formData.get("keywords") || "")
+    .split(",")
+    .map((k) => k.trim().toLowerCase())
+    .filter(Boolean);
+  if (!name) redirect("/settings?error=worker_missing#workers");
+  const count = await prisma.worker.count({ where: { businessId: business!.id } });
+  await prisma.worker.create({
+    data: {
+      businessId: business!.id,
+      name,
+      phoneNumber,
+      keywords,
+      routingOrder: count + 1,
+    },
+  });
+  redirect("/settings?saved=worker_added#workers");
+}
+
+export async function updateWorkerAction(formData: FormData) {
+  const business = await getCurrentBusiness();
+  if (!business) redirect("/login");
+  const workerId = String(formData.get("workerId"));
+  const name = String(formData.get("name") || "").trim();
+  const phoneNumber = String(formData.get("phoneNumber") || "").trim();
+  const keywords = String(formData.get("keywords") || "")
+    .split(",")
+    .map((k) => k.trim().toLowerCase())
+    .filter(Boolean);
+  const backupWorkerId = String(formData.get("backupWorkerId") || "") || null;
+  const worker = await prisma.worker.findFirst({
+    where: { id: workerId, businessId: business!.id },
+  });
+  if (worker) {
+    await prisma.worker.update({
+      where: { id: worker.id },
+      data: { name: name || worker.name, phoneNumber, keywords, backupWorkerId },
+    });
+  }
+  redirect("/settings?saved=worker_updated#workers");
+}
+
+export async function removeWorkerAction(formData: FormData) {
+  const business = await getCurrentBusiness();
+  if (!business) redirect("/login");
+  const workerId = String(formData.get("workerId"));
+  const worker = await prisma.worker.findFirst({
+    where: { id: workerId, businessId: business!.id },
+  });
+  if (worker) {
+    // Clear any backup references to this worker first.
+    await prisma.worker.updateMany({
+      where: { businessId: business!.id, backupWorkerId: worker.id },
+      data: { backupWorkerId: null },
+    });
+    await prisma.worker.delete({ where: { id: worker.id } });
+  }
+  redirect("/settings?saved=worker_removed#workers");
+}
+
 export async function toggleWorkerAction(formData: FormData) {
   const business = await getCurrentBusiness();
   if (!business) redirect("/login");

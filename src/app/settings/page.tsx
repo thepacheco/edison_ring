@@ -3,7 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
 import { AppNav } from "@/components/AppNav";
 import { SettingsTabs } from "@/components/SettingsTabs";
-import { updateSettingsAction, toggleWorkerAction } from "../actions";
+import {
+  updateSettingsAction,
+  toggleWorkerAction,
+  addWorkerAction,
+  updateWorkerAction,
+  removeWorkerAction,
+} from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -267,8 +273,79 @@ export default async function SettingsPage({
             </Section>
           </Card>
         </div>
+
+        {/* full worker management */}
+        <div id="workers" style={{ marginTop: 16 }}>
+          <Card>
+            <Section
+              title="Workers & routing"
+              hint="The field techs jobs get routed to. Set keywords (for keyword routing) and a backup for call-outs."
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {workers.length === 0 && (
+                  <div style={{ fontSize: 13, color: "var(--faint)" }}>
+                    No workers yet — all jobs route to the owner. Add your crew below.
+                  </div>
+                )}
+                {workers.map((w) => (
+                  <form
+                    key={w.id}
+                    action={updateWorkerAction}
+                    style={{ border: "1px solid var(--line)", borderRadius: 12, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 9 }}
+                  >
+                    <input type="hidden" name="workerId" value={w.id} />
+                    <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+                      <WInput name="name" placeholder="Name" defaultValue={w.name} />
+                      <WInput name="phoneNumber" placeholder="Phone" defaultValue={w.phoneNumber} />
+                    </div>
+                    <div style={{ display: "flex", gap: 9, flexWrap: "wrap", alignItems: "center" }}>
+                      <WInput name="keywords" placeholder="keywords: drain, furnace" defaultValue={w.keywords.join(", ")} />
+                      <select name="backupWorkerId" defaultValue={w.backupWorkerId ?? ""} style={wSelect}>
+                        <option value="">No backup</option>
+                        {workers.filter((o) => o.id !== w.id).map((o) => (
+                          <option key={o.id} value={o.id}>Backup: {o.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 11.5, color: w.isAvailable ? "var(--green)" : "var(--amber)", fontWeight: 600 }}>
+                        {w.isAvailable ? "● Available" : "● Out (routing to backup)"}
+                      </span>
+                      <button type="submit" style={{ ...wBtn, marginLeft: "auto" }}>Save</button>
+                      <button type="submit" formAction={removeWorkerAction} style={{ ...wBtn, color: "#c0453f", borderColor: "#f0cccc" }}>Remove</button>
+                    </div>
+                  </form>
+                ))}
+              </div>
+
+              <form action={addWorkerAction} style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 9, borderTop: "1px solid var(--line-soft)", paddingTop: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Add a worker</div>
+                <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+                  <WInput name="name" placeholder="Name" />
+                  <WInput name="phoneNumber" placeholder="Phone" />
+                  <WInput name="keywords" placeholder="keywords: drain, furnace" />
+                </div>
+                <button type="submit" style={{ ...wBtn, alignSelf: "flex-start", background: "var(--ink)", color: "var(--ink-invert)", border: "none" }}>Add worker</button>
+              </form>
+            </Section>
+          </Card>
+        </div>
       </div>
     </main>
+  );
+}
+
+const wSelect: React.CSSProperties = { border: "1px solid var(--line)", borderRadius: 9, padding: "9px 11px", fontSize: 13, fontFamily: "inherit", background: "var(--card)", color: "var(--ink)", flex: "1 1 160px" };
+const wBtn: React.CSSProperties = { border: "1px solid var(--line)", background: "var(--card)", color: "var(--ink)", borderRadius: 9, padding: "8px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" };
+
+function WInput({ name, placeholder, defaultValue }: { name: string; placeholder: string; defaultValue?: string }) {
+  return (
+    <input
+      name={name}
+      placeholder={placeholder}
+      defaultValue={defaultValue}
+      style={{ flex: "1 1 150px", minWidth: 0, border: "1px solid var(--line)", borderRadius: 9, padding: "9px 11px", fontSize: 13, fontFamily: "inherit", background: "var(--card)", color: "var(--ink)" }}
+    />
   );
 }
 
