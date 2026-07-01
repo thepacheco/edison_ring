@@ -1,0 +1,127 @@
+// Edison — Missed Call Rescue
+// Prisma schema. Core models per the build spec (Day 1).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id                String   @id @default(cuid())
+  name              String
+  ownerEmail        String   @unique
+  passwordHash      String? // simple credentials auth (scrypt)
+  phoneNumber       String // their forwarded business line
+  twilioNumber      String   @unique // the Edison-provisioned number
+  carrier           String?
+  businessType      String   @default("home_services") // hvac | plumbing | electrical | salon | auto | ...
+  setupCompleted    Boolean  @default(false)
+  avgTicketPrice    Decimal  @default(0) @db.Decimal(10, 2)
+  businessHours     Json? // { mon: {open, close}, ... }
+  aiToneSettings    Json? // custom prompt tweaks + greeting override
+  routingMode       String   @default("always_to_owner") // always_to_owner | round_robin | keyword
+  plan              String   @default("founding") // founding | standard | high_volume
+  conversationLimit Int      @default(300)
+
+  // Billing (Stripe)
+  stripeCustomerId   String?
+  stripeSubId        String?
+  subscriptionStatus String    @default("none") // none | trialing | active | past_due | canceled
+  trialEndsAt        DateTime?
+  canceledAt         DateTime?
+  cancelReason       String?
+  foundingLockedAt   DateTime? // founding price locked-for-life timestamp
+  flaggedForReview   Boolean   @default(false) // hard-cap breach → manual review
+
+  // Calendar (Google)
+  googleRefreshToken String?
+  googleCalendarId   String? @default("primary")
+
+  createdAt DateTime @default(now())
+
+  locations     Location[]
+  conversations Conversation[]
+  workers       Worker[]
+  usageRecords  UsageRecord[]
+}
+
+model Location {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  phoneNumber  String
+  twilioNumber String   @unique
+  isPrimary    Boolean  @default(false)
+
+  conversations Conversation[]
+}
+
+model Worker {
+  id             String   @id @default(cuid())
+  businessId     String
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name           String
+  phoneNumber    String
+  isAvailable    Boolean  @default(true) // false when "out"
+  backupWorkerId String?
+  keywords       String[] // for keyword-based routing
+  routingOrder   Int? // for round robin
+
+  conversations Conversation[]
+}
+
+model Conversation {
+  id               String    @id @default(cuid())
+  businessId       String
+  business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  locationId       String?
+  location         Location? @relation(fields: [locationId], references: [id])
+  customerPhone    String
+  customerName     String?
+  status           String    @default("new") // new | booked | needs_followup | closed
+  intent           String? // booking_request | urgent | needs_human | general_inquiry
+  summary          String? // one-line "what the customer needs"
+  estimatedValue   Decimal?  @db.Decimal(10, 2)
+  assignedWorkerId String?
+  assignedWorker   Worker?   @relation(fields: [assignedWorkerId], references: [id])
+  bookedSlot       DateTime?
+  exchangeCount    Int       @default(0) // number of customer<->AI back-and-forths
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  messages Message[]
+
+  @@index([businessId, status])
+  @@index([businessId, customerPhone])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direction      String // inbound | outbound
+  body           String
+  twilioSid      String? // Twilio message SID for delivery tracking
+  inputTokens    Int? // AI-generated outbound: tokens in, for real COGS
+  outputTokens   Int? // AI-generated outbound: tokens out
+  modelUsed      String? // e.g. "claude-haiku-4-5"
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model UsageRecord {
+  id                String   @id @default(cuid())
+  businessId        String
+  business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  month             String // "2026-06"
+  conversationCount Int      @default(0)
+  overageCount      Int      @default(0)
+
+  @@unique([businessId, month])
+}

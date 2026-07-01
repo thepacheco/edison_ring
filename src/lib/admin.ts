@@ -1,0 +1,140 @@
+import { prisma } from "./prisma";
+import { currentMonth } from "./usage";
+import { subscriptionCost, planFor, COGS, OVERAGE_RATE } from "./pricing";
+
+export interface AdminMetrics {
+  mrr: number;
+  activeSubscribers: number;
+  byPlan: { plan: string; count: number }[];
+  trials: { name: string; daysLeft: number }[];
+  conversionRate: number; // 0..1
+  churnThisMonth: number;
+  conversationsThisMonth: number;
+  estCogs: number;
+  margin: number; // mrr - estCogs
+  nearLimit: { name: string; used: number; limit: number }[];
+  failedPayments: { name: string; email: string }[];
+  demo: boolean;
+}
+
+const DEMO: AdminMetrics = {
+  mrr: 1342,
+  activeSubscribers: 17,
+  byPlan: [
+    { plan: "founding", count: 6 },
+    { plan: "standard", count: 8 },
+    { plan: "high_volume", count: 3 },
+  ],
+  trials: [
+    { name: "Northgate Plumbing", daysLeft: 9 },
+    { name: "Vela Auto", daysLeft: 3 },
+  ],
+  conversionRate: 0.42,
+  churnThisMonth: 1,
+  conversationsThisMonth: 3120,
+  estCogs: 168.4,
+  margin: 1173.6,
+  nearLimit: [{ name: "Rivera Comfort HVAC", used: 247, limit: 300 }],
+  failedPayments: [{ name: "Vela Auto", email: "owner@vela.test" }],
+  demo: true,
+};
+
+function daysBetween(a: Date, b: Date): number {
+  return Math.ceil((a.getTime() - b.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+export async function getAdminMetrics(): Promise<AdminMetrics> {
+  try {
+    const month = currentMonth();
+    const monthStart = new Date(`${month}-01T00:00:00`);
+    const now = new Date();
+
+    const businesses = await prisma.business.findMany({
+      include: { _count: { select: { locations: true } } },
+    });
+    if (businesses.length === 0) return DEMO;
+
+    let mrr = 0;
+    const planCounts: Record<string, number> = {};
+    const trials: { name: string; daysLeft: number }[] = [];
+    const failedPayments: { name: string; email: string }[] = [];
+    let activeSubscribers = 0;
+
+    for (const b of businesses) {
+      const locs = Math.max(1, b._count.locations);
+      const cost = subscriptionCost(b.plan, locs);
+      if (b.subscriptionStatus === "active" || b.subscriptionStatus === "past_due") {
+        mrr += cost;
+        activeSubscribers += 1;
+        planCounts[b.plan] = (planCounts[b.plan] ?? 0) + 1;
+      }
+      if (b.subscriptionStatus === "trialing" && b.trialEndsAt) {
+        trials.push({ name: b.name, daysLeft: Math.max(0, daysBetween(b.trialEndsAt, now)) });
+      }
+      if (b.subscriptionStatus === "past_due") {
+        failedPayments.push({ name: b.name, email: b.ownerEmail });
+      }
+    }
+
+    // conversion: of accounts that have ever subscribed, how many are active.
+    const everSubscribed = businesses.filter((b) => b.subscriptionStatus !== "none").length;
+    const conversionRate = everSubscribed > 0 ? activeSubscribers / everSubscribed : 0;
+
+    const churnThisMonth = businesses.filter(
+      (b) => b.subscriptionStatus === "canceled" && b.canceledAt && b.canceledAt >= monthStart,
+    ).length;
+
+    // usage + COGS this month, platform-wide
+    const usage = await prisma.usageRecord.aggregate({
+      where: { month },
+      _sum: { conversationCount: true },
+    });
+    const conversationsThisMonth = usage._sum.conversationCount ?? 0;
+
+    const tokenAgg = await prisma.message.aggregate({
+      where: { direction: "outbound", createdAt: { gte: monthStart } },
+      _sum: { inputTokens: true, outputTokens: true },
+    });
+    const inTok = tokenAgg._sum.inputTokens ?? 0;
+    const outTok = tokenAgg._sum.outputTokens ?? 0;
+    const anthropicCost =
+      (inTok / 1_000_000) * COGS.anthropicInputPerMTok +
+      (outTok / 1_000_000) * COGS.anthropicOutputPerMTok;
+    const twilioCost = conversationsThisMonth * COGS.twilioPerConversation;
+    const estCogs = Math.round((anthropicCost + twilioCost) * 100) / 100;
+
+    // near/over limit
+    const usageRecords = await prisma.usageRecord.findMany({ where: { month } });
+    const byBusiness = new Map(usageRecords.map((u) => [u.businessId, u]));
+    const nearLimit = businesses
+      .map((b) => {
+        const used = byBusiness.get(b.id)?.conversationCount ?? 0;
+        return { name: b.name, used, limit: b.conversationLimit };
+      })
+      .filter((x) => x.used >= x.limit * 0.8)
+      .sort((a, b) => b.used / b.limit - a.used / a.limit);
+
+    return {
+      mrr,
+      activeSubscribers,
+      byPlan: Object.entries(planCounts).map(([plan, count]) => ({ plan, count })),
+      trials,
+      conversionRate,
+      churnThisMonth,
+      conversationsThisMonth,
+      estCogs,
+      margin: Math.round((mrr - estCogs) * 100) / 100,
+      nearLimit,
+      failedPayments,
+      demo: false,
+    };
+  } catch {
+    return DEMO;
+  }
+}
+
+export function planLabel(plan: string): string {
+  return planFor(plan).name;
+}
+
+export { OVERAGE_RATE };

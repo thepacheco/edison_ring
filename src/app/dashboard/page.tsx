@@ -1,0 +1,364 @@
+import Link from "next/link";
+import { getDashboardData, type RecentLead } from "@/lib/dashboard";
+import { MoneyCounter } from "@/components/MoneyCounter";
+import { AppNav } from "@/components/AppNav";
+
+export const dynamic = "force-dynamic";
+
+const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> =
+  {
+    booked: { label: "Booked", color: "#0a7d54", bg: "#e6f6ef" },
+    needs_followup: { label: "Follow up", color: "#a86400", bg: "#fdf3e2" },
+    new: { label: "New", color: "#5b46f9", bg: "#eceaff" },
+    closed: { label: "Closed", color: "#5b6475", bg: "#f0f1f5" },
+  };
+
+export default async function DashboardPage() {
+  const d = await getDashboardData();
+  const usagePct = Math.min(
+    100,
+    Math.round((d.conversationsUsed / d.conversationLimit) * 100),
+  );
+
+  return (
+    <main style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <AppNav active="/dashboard" businessName={d.businessName} />
+
+      <div
+        style={{
+          padding: "34px 28px 64px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 22,
+          alignItems: "center",
+        }}
+      >
+        {d.demo && (
+          <div
+            className="mono"
+            style={{
+              fontSize: 11.5,
+              color: "var(--amber)",
+              background: "var(--amber-soft)",
+              border: "1px solid #f3e0bd",
+              borderRadius: 8,
+              padding: "6px 12px",
+              textAlign: "center",
+            }}
+          >
+            sample data — connect DATABASE_URL and run a missed-call test to see
+            live numbers
+          </div>
+        )}
+
+        {/* centerpiece — paid for itself tracker */}
+        <section
+          style={{
+            width: "100%",
+            maxWidth: 760,
+            background: "#fff",
+            border: "1px solid var(--line)",
+            borderRadius: 20,
+            boxShadow: "0 18px 44px -28px rgba(91,70,249,.35)",
+            padding: "38px 40px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 14,
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: d.paidForItself ? "var(--green-soft)" : "#f0f1f5",
+              color: d.paidForItself ? "var(--green)" : "var(--muted)",
+              borderRadius: 30,
+              padding: "7px 15px",
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          >
+            {d.paidForItself
+              ? "✓ Paid for itself this month"
+              : "On its way to paying for itself"}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <span style={{ fontSize: 14, color: "var(--faint)", fontWeight: 600 }}>
+              Edison recovered for you this month
+            </span>
+            <MoneyCounter
+              target={d.recoveredThisMonth}
+              className="mono"
+              style={{
+                fontWeight: 700,
+                fontSize: 74,
+                letterSpacing: "-.03em",
+                lineHeight: 1,
+                color: "var(--green)",
+              }}
+            />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap",
+              justifyContent: "center",
+              fontSize: 14,
+              color: "var(--muted)",
+            }}
+          >
+            <span>
+              <b className="mono" style={{ color: "var(--ink)" }}>
+                {d.jobsBooked}
+              </b>{" "}
+              jobs booked
+            </span>
+            <span style={{ color: "#d4d7de" }}>×</span>
+            <span>
+              <b className="mono" style={{ color: "var(--ink)" }}>
+                ${d.avgTicket}
+              </b>{" "}
+              avg ticket
+            </span>
+            <span style={{ color: "#d4d7de" }}>·</span>
+            <span>
+              Edison costs{" "}
+              <b className="mono" style={{ color: "var(--ink)" }}>
+                ${d.subscriptionCost}
+              </b>
+            </span>
+          </div>
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 440,
+              marginTop: 6,
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
+            <div
+              style={{
+                height: 8,
+                borderRadius: 6,
+                background: "#eef0f4",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  background: "linear-gradient(90deg,#5b46f9,#0f9d6b)",
+                  borderRadius: 6,
+                }}
+              />
+            </div>
+            <div
+              className="mono"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 11,
+                color: "var(--faint)",
+              }}
+            >
+              <span>$0</span>
+              <span>{d.returnMultiple}× your subscription</span>
+            </div>
+          </div>
+        </section>
+
+        {/* stat strip */}
+        <section
+          style={{
+            width: "100%",
+            maxWidth: 760,
+            display: "flex",
+            gap: 14,
+            flexWrap: "wrap",
+          }}
+        >
+          <StatCard label="Conversations">
+            <span className="mono" style={{ fontWeight: 700, fontSize: 22 }}>
+              {d.conversationsUsed}
+              <span style={{ color: "#aeb4c0", fontSize: 15 }}>
+                {" "}
+                / {d.conversationLimit}
+              </span>
+            </span>
+            <div
+              style={{
+                height: 5,
+                borderRadius: 4,
+                background: "#eceef3",
+                overflow: "hidden",
+                marginTop: 8,
+              }}
+            >
+              <div
+                style={{
+                  width: `${usagePct}%`,
+                  height: "100%",
+                  background: usagePct >= 90 ? "#d99413" : "var(--indigo)",
+                  borderRadius: 4,
+                }}
+              />
+            </div>
+          </StatCard>
+          <StatCard label="Booked jobs">
+            <span className="mono" style={{ fontWeight: 700, fontSize: 22 }}>
+              {d.jobsBooked}
+            </span>
+          </StatCard>
+          <StatCard label="Needs follow-up">
+            <span
+              className="mono"
+              style={{ fontWeight: 700, fontSize: 22, color: "var(--amber)" }}
+            >
+              {d.needsFollowup}
+            </span>
+          </StatCard>
+        </section>
+
+        {/* recent leads */}
+        <section
+          style={{
+            width: "100%",
+            maxWidth: 760,
+            background: "#fff",
+            border: "1px solid var(--line)",
+            borderRadius: 16,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "16px 20px",
+              borderBottom: "1px solid var(--line-soft)",
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 15 }}>Recent leads</span>
+            <Link
+              href="/conversations"
+              style={{ fontSize: 13, color: "var(--indigo)", fontWeight: 600 }}
+            >
+              View all →
+            </Link>
+          </div>
+          {d.recentLeads.length === 0 && (
+            <div
+              style={{ padding: "28px 20px", color: "var(--faint)", fontSize: 14 }}
+            >
+              No leads yet. When a call goes unanswered, Edison texts the caller
+              and the conversation shows up here.
+            </div>
+          )}
+          {d.recentLeads.map((lead, i) => (
+            <LeadRow key={lead.id} lead={lead} last={i === d.recentLeads.length - 1} />
+          ))}
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function StatCard({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        flex: "1 1 200px",
+        background: "#fff",
+        border: "1px solid var(--line)",
+        borderRadius: 14,
+        padding: "16px 18px",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--faint)",
+          fontWeight: 600,
+          marginBottom: 5,
+        }}
+      >
+        {label}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function LeadRow({ lead, last }: { lead: RecentLead; last: boolean }) {
+  const s = STATUS_STYLE[lead.status] ?? STATUS_STYLE.new;
+  return (
+    <Link
+      href={`/conversations/${lead.id}`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        padding: "15px 20px",
+        borderBottom: last ? "none" : "1px solid #f4f5f8",
+      }}
+    >
+      <div
+        style={{
+          width: 38,
+          height: 38,
+          flex: "none",
+          borderRadius: "50%",
+          background: s.bg,
+          color: s.color,
+          fontSize: 13,
+          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {lead.initials}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 600 }}>{lead.name}</div>
+        <div
+          style={{
+            fontSize: 13,
+            color: "var(--faint)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {lead.summary}
+        </div>
+      </div>
+      {lead.value != null && (
+        <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: s.color }}>
+          ${lead.value}
+        </span>
+      )}
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: s.color,
+          background: s.bg,
+          borderRadius: 20,
+          padding: "4px 11px",
+        }}
+      >
+        {s.label}
+      </span>
+    </Link>
+  );
+}
