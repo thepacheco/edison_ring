@@ -39,10 +39,9 @@ export default function PrivacyPage() {
 
         <Section title="Service providers">
           We share data with the processors needed to run Edison: Twilio (SMS/voice
-          delivery), Anthropic (AI reply generation), Stripe (payments), Google
-          (calendar booking, only if you connect it), Resend (transactional email),
-          and our hosting/database providers. Each processes data only to provide
-          their part of the service.
+          delivery), Anthropic (AI reply generation), Stripe (payments), Resend
+          (transactional email), and our hosting/database providers. Each processes
+          data only to provide their part of the service.
         </Section>
 
         <Section title="Text-message data">

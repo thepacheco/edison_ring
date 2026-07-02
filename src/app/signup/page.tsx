@@ -3,6 +3,7 @@ import { signupAction } from "../actions";
 import { PLANS } from "@/lib/pricing";
 import { AuthShell, Field, Err, labelStyle, inputStyle, primaryBtn } from "@/components/AuthUI";
 import { SubmitButton } from "@/components/SubmitButton";
+import { PasswordField } from "@/components/PasswordField";
 
 export const dynamic = "force-dynamic";
 
@@ -24,13 +25,16 @@ export default async function SignupPage({
                 ? "Enter a valid email address."
                 : error === "weak_password"
                 ? "Password must be at least 8 characters."
+                : error === "mismatch"
+                ? "The two passwords don't match."
                 : "Please fill in all required fields."
             }
           />
         )}
         <Field label="Business name" name="businessName" placeholder="Rivera Comfort HVAC" required />
         <Field label="Work email" name="email" type="email" placeholder="owner@business.com" required />
-        <Field label="Password" name="password" type="password" placeholder="••••••••" required />
+        <PasswordField name="password" label="Password" hint="At least 8 characters." />
+        <PasswordField name="confirm" label="Confirm password" hint="Type it again to be sure." />
         <Field label="Business phone" name="phoneNumber" placeholder="(206) 555-0100" />
         <label style={labelStyle}>
           Plan

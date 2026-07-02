@@ -152,8 +152,80 @@ export default async function AdminPage() {
             ))}
           </Panel>
         </div>
+
+        {/* all customers — spot problems before they happen */}
+        <div style={{ marginTop: 14, background: "#161922", border: "1px solid #20242f", borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 18px", borderBottom: "1px solid #20242f", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#8a93a3", textTransform: "uppercase", letterSpacing: ".05em" }}>
+              All customers · subscription &amp; usage
+            </span>
+            <span className="mono" style={{ fontSize: 11.5, color: "#6b7280" }}>{m.customers.length} total · riskiest first</span>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ color: "#6b7280", fontSize: 11, textTransform: "uppercase", letterSpacing: ".04em", textAlign: "left" }}>
+                  <th style={th}>Business</th>
+                  <th style={th}>Plan</th>
+                  <th style={th}>Status</th>
+                  <th style={{ ...th, minWidth: 170 }}>Usage this month</th>
+                  <th style={{ ...th, textAlign: "right" }}>Locations</th>
+                  <th style={{ ...th, textAlign: "right" }}>$/mo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {m.customers.length === 0 && (
+                  <tr><td colSpan={6} style={{ padding: "16px 18px", color: "#6b7280" }}>No customers yet.</td></tr>
+                )}
+                {m.customers.map((c) => {
+                  const pct = Math.min(100, Math.round((c.used / Math.max(1, c.limit)) * 100));
+                  const barColor = c.flagged || pct >= 100 ? "#e06a6a" : pct >= 80 ? "#e0a13c" : "#3fb984";
+                  return (
+                    <tr key={c.email} style={{ borderTop: "1px solid #1e222c" }}>
+                      <td style={td}>
+                        <div style={{ fontWeight: 600, color: "#e7e9ef" }}>{c.name}{c.flagged && <span title="Hard cap hit — flagged for review" style={{ marginLeft: 7, fontSize: 10, fontWeight: 800, color: "#e06a6a" }}>⚑ REVIEW</span>}</div>
+                        <div className="mono" style={{ fontSize: 11, color: "#6b7280" }}>{c.email}</div>
+                      </td>
+                      <td style={{ ...td, color: "#c7cbd4" }}>{planLabel(c.plan)}</td>
+                      <td style={td}><StatusPill status={c.status} /></td>
+                      <td style={td}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ flex: 1, height: 6, borderRadius: 4, background: "#20242f", overflow: "hidden" }}>
+                            <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 4 }} />
+                          </div>
+                          <span className="mono" style={{ fontSize: 11.5, color: pct >= 80 ? barColor : "#8a93a3", whiteSpace: "nowrap" }}>{c.used}/{c.limit}</span>
+                        </div>
+                      </td>
+                      <td style={{ ...td, textAlign: "right" }} className="mono">{c.locations}</td>
+                      <td style={{ ...td, textAlign: "right", color: "#c7cbd4" }} className="mono">${c.monthly}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </main>
+  );
+}
+
+const th: React.CSSProperties = { padding: "9px 18px", fontWeight: 700 };
+const td: React.CSSProperties = { padding: "11px 18px", verticalAlign: "middle" };
+
+function StatusPill({ status }: { status: string }) {
+  const map: Record<string, { label: string; color: string; bg: string }> = {
+    active: { label: "Active", color: "#3fb984", bg: "#12261d" },
+    trialing: { label: "Trial", color: "#7c6cff", bg: "#26234a" },
+    past_due: { label: "Past due", color: "#e06a6a", bg: "#2d1a1a" },
+    canceled: { label: "Canceled", color: "#6b7280", bg: "#1e222c" },
+    none: { label: "No sub", color: "#e0a13c", bg: "#2a2213" },
+  };
+  const s = map[status] ?? map.none;
+  return (
+    <span className="mono" style={{ fontSize: 10.5, fontWeight: 700, color: s.color, background: s.bg, borderRadius: 20, padding: "3px 9px", whiteSpace: "nowrap" }}>
+      {s.label}
+    </span>
   );
 }
 

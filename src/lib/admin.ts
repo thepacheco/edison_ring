@@ -9,6 +9,18 @@ export interface GrowthPoint {
   newSignups: number;
 }
 
+export interface CustomerRow {
+  name: string;
+  email: string;
+  plan: string;
+  status: string; // none | trialing | active | past_due | canceled
+  used: number; // conversations this month
+  limit: number;
+  locations: number;
+  monthly: number; // what they pay
+  flagged: boolean; // hard-cap review flag
+}
+
 export interface AdminMetrics {
   mrr: number;
   activeSubscribers: number;
@@ -20,6 +32,7 @@ export interface AdminMetrics {
   estCogs: number;
   margin: number; // mrr - estCogs
   growth: GrowthPoint[]; // last 6 months
+  customers: CustomerRow[]; // every business, sorted riskiest first
   nearLimit: { name: string; used: number; limit: number }[];
   failedPayments: { name: string; email: string }[];
   demo: boolean;
@@ -49,6 +62,11 @@ const DEMO: AdminMetrics = {
     { label: "May", subscribers: 12, mrr: 948, newSignups: 3 },
     { label: "Jun", subscribers: 15, mrr: 1185, newSignups: 3 },
     { label: "Jul", subscribers: 17, mrr: 1342, newSignups: 2 },
+  ],
+  customers: [
+    { name: "Rivera Comfort HVAC", email: "owner@rivera.test", plan: "standard", status: "active", used: 247, limit: 300, locations: 1, monthly: 79, flagged: false },
+    { name: "Northgate Plumbing", email: "np@demo.test", plan: "founding", status: "trialing", used: 41, limit: 300, locations: 1, monthly: 49, flagged: false },
+    { name: "Vela Auto", email: "owner@vela.test", plan: "standard", status: "past_due", used: 120, limit: 300, locations: 2, monthly: 138, flagged: false },
   ],
   nearLimit: [{ name: "Rivera Comfort HVAC", used: 247, limit: 300 }],
   failedPayments: [{ name: "Vela Auto", email: "owner@vela.test" }],
@@ -151,6 +169,28 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
       .filter((x) => x.used >= x.limit * 0.8)
       .sort((a, b) => b.used / b.limit - a.used / a.limit);
 
+    // Every customer, riskiest first: flagged > past_due > highest usage %.
+    const statusRank = (s: string) =>
+      s === "past_due" ? 0 : s === "trialing" ? 1 : s === "active" ? 2 : 3;
+    const customers: CustomerRow[] = businesses
+      .map((b) => ({
+        name: b.name,
+        email: b.ownerEmail,
+        plan: b.plan,
+        status: b.subscriptionStatus,
+        used: byBusiness.get(b.id)?.conversationCount ?? 0,
+        limit: b.conversationLimit,
+        locations: Math.max(1, b._count.locations),
+        monthly: costOf(b),
+        flagged: b.flaggedForReview,
+      }))
+      .sort((a, b) => {
+        if (a.flagged !== b.flagged) return a.flagged ? -1 : 1;
+        if (statusRank(a.status) !== statusRank(b.status))
+          return statusRank(a.status) - statusRank(b.status);
+        return b.used / b.limit - a.used / a.limit;
+      });
+
     return {
       mrr,
       activeSubscribers,
@@ -162,6 +202,7 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
       estCogs,
       margin: Math.round((mrr - estCogs) * 100) / 100,
       growth,
+      customers,
       nearLimit,
       failedPayments,
       demo: false,
