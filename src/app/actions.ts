@@ -367,6 +367,23 @@ export async function updateSettingsAction(formData: FormData) {
   // only touch what's present (avoids one tab wiping another's values).
   const data: Record<string, unknown> = {};
 
+  if (tab === "business") {
+    const hoursData: Record<string, unknown> = {};
+    const DAYS_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+    for (const d of DAYS_KEYS) {
+      const enabled = formData.get(`hours_${d}_enabled`) === "on";
+      if (enabled) {
+        hoursData[d] = {
+          open: String(formData.get(`hours_${d}_open`) || "9:00 AM"),
+          close: String(formData.get(`hours_${d}_close`) || "5:00 PM"),
+        };
+      } else {
+        hoursData[d] = null;
+      }
+    }
+    data.businessHours = hoursData;
+  }
+
   if (formData.has("avgTicketPrice")) {
     const v = Number(formData.get("avgTicketPrice"));
     if (Number.isFinite(v)) data.avgTicketPrice = v;

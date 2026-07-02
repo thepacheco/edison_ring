@@ -84,7 +84,7 @@ export default async function DashboardPage({
 
         {/* centerpiece — paid for itself tracker */}
         <section
-          className="rise"
+          className="rise lift"
           style={{
             width: "100%",
             maxWidth: 760,
@@ -437,7 +437,7 @@ function ChecklistItem({ done, label, href, cta, muted }: { done: boolean; label
       </span>
       <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: done ? "var(--faint)" : "var(--ink)", textDecoration: done ? "line-through" : "none" }}>{label}</span>
       {!done && (
-        <Link href={href} style={{ fontSize: 12.5, fontWeight: 700, color: muted ? "var(--muted)" : "#fff", background: muted ? "transparent" : "var(--indigo)", border: muted ? "1px solid var(--line)" : "none", borderRadius: 8, padding: "6px 12px" }}>
+        <Link href={href} className="lift" style={{ fontSize: 12.5, fontWeight: 700, color: muted ? "var(--muted)" : "#fff", background: muted ? "transparent" : "var(--indigo)", border: muted ? "1px solid var(--line)" : "none", borderRadius: 8, padding: "6px 12px" }}>
           {cta}
         </Link>
       )}

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { logoutAction } from "@/app/actions";
-import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
   { href: "/dashboard", label: "Home" },
@@ -91,7 +90,6 @@ export function AppNav({
         </nav>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <ThemeToggle />
         <form action={logoutAction}>
           <button
             type="submit"

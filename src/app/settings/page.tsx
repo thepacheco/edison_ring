@@ -78,21 +78,39 @@ export default async function SettingsPage({
         {/* ---- BUSINESS ---- */}
         {active === "business" && (
           <Card>
-            <Section title="Business hours" hint="When you're open. Edison still rescues after-hours calls.">
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {DAYS.map((d) => {
-                  const v = hours[d.key];
-                  return (
-                    <div key={d.key} style={{ display: "flex", justifyContent: "space-between", border: "1px solid var(--line)", borderRadius: 10, padding: "11px 14px", fontSize: 13.5 }}>
-                      <span style={{ fontWeight: 600 }}>{d.label}</span>
-                      <span className="mono" style={{ color: "var(--muted)" }}>{v?.open ? `${v.open} – ${v.close}` : "Closed"}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </Section>
             <form action={updateSettingsAction}>
               <input type="hidden" name="tab" value="business" />
+              <Section title="Business hours" hint="When you're open. Edison still rescues after-hours calls.">
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {DAYS.map((d) => {
+                    const v = hours[d.key];
+                    const isOpen = !!v;
+                    const openVal = v?.open || "8:00 AM";
+                    const closeVal = v?.close || "5:00 PM";
+                    return (
+                      <div key={d.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid var(--line)", borderRadius: 10, padding: "10px 14px", fontSize: 13.5, gap: 12, flexWrap: "wrap" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, cursor: "pointer" }}>
+                          <input type="checkbox" name={`hours_${d.key}_enabled`} defaultChecked={isOpen} style={{ cursor: "pointer" }} />
+                          {d.label}
+                        </label>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <select name={`hours_${d.key}_open`} defaultValue={openVal} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "5px 8px", fontSize: 12.5, background: "var(--card)", color: "var(--ink)" }}>
+                            {TIME_OPTIONS.map((t) => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
+                          <span style={{ color: "var(--faint)" }}>to</span>
+                          <select name={`hours_${d.key}_close`} defaultValue={closeVal} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "5px 8px", fontSize: 12.5, background: "var(--card)", color: "var(--ink)" }}>
+                            {TIME_OPTIONS.map((t) => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Section>
               <Section title="Average ticket" hint="Feeds the 'paid for itself' tracker and the calendar's recovered totals.">
                 <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--line)", borderRadius: 11, padding: "10px 14px", maxWidth: 200 }}>
                   <span className="mono" style={{ fontSize: 18, color: "var(--faint)", marginRight: 4 }}>$</span>
@@ -275,3 +293,12 @@ function Section({ title, hint, children }: { title: string; hint: string; child
     </div>
   );
 }
+
+const TIME_OPTIONS = [
+  "12:00 AM", "12:30 AM", "1:00 AM", "1:30 AM", "2:00 AM", "2:30 AM", "3:00 AM", "3:30 AM",
+  "4:00 AM", "4:30 AM", "5:00 AM", "5:30 AM", "6:00 AM", "6:30 AM", "7:00 AM", "7:30 AM",
+  "8:00 AM", "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
+  "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM",
+  "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM", "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM",
+  "8:00 PM", "8:30 PM", "9:00 PM", "9:30 PM", "10:00 PM", "10:30 PM", "11:00 PM", "11:30 PM"
+];

@@ -4,8 +4,7 @@ import { anthropic, EDISON_MODEL } from "./anthropic";
 import { prisma } from "./prisma";
 import { sendSms } from "./twilio";
 import { pickWorker } from "./routing";
-import { findOpenSlots, createBooking, googleConfigured, type Slot } from "./google";
-import { localOpenSlots } from "./calendar";
+import { Slot, localOpenSlots } from "./calendar";
 
 // After this many customer messages without a booking, Edison stops trying to
 // resolve over text and hands off to a human.
@@ -234,14 +233,10 @@ export async function advanceConversation(
     assignedWorkerId = pickWorker(business, workers, firstInbound)?.id ?? null;
   }
 
-  // Offer real open times. Use Google if the business connected it; otherwise
-  // fall back to Edison's built-in calendar (generated from business hours).
-  const usingGoogle = Boolean(business.googleRefreshToken) && googleConfigured();
+  // Offer real open times using Edison's built-in calendar (generated from business hours).
   let slots: Slot[] = [];
   try {
-    slots = usingGoogle
-      ? await findOpenSlots(business, { max: 3 })
-      : await localOpenSlots(business, { max: 3 });
+    slots = await localOpenSlots(business, { max: 3 });
   } catch (err) {
     console.error("open-slot lookup failed:", err);
   }
@@ -257,20 +252,6 @@ export async function advanceConversation(
         iso: ai.selectedSlotIso,
         label: ai.selectedSlotIso,
       };
-    // Only push to Google when it's connected; otherwise the booking lives in
-    // Edison's own calendar (the bookedSlot we set below).
-    if (usingGoogle) {
-      try {
-        await createBooking(business, {
-          startISO: slot.iso,
-          summary: `${ai.customerName ?? "New customer"} — ${ai.customerNeed}`,
-          description: `Booked by Edison from ${conversation.customerPhone}.`,
-        });
-      } catch (err) {
-        console.error("createBooking failed:", err);
-        // Still mark booked; a human can reconcile the external calendar.
-      }
-    }
     bookedSlot = new Date(slot.iso);
     booked = true;
   } else if (ai.readyToBook) {

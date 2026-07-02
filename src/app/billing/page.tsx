@@ -11,7 +11,6 @@ import {
   subscriptionCost,
   perLocationPrice,
 } from "@/lib/pricing";
-import { googleConfigured } from "@/lib/google";
 import { startCheckoutAction, billingPortalAction } from "../actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { carrierById } from "@/lib/carriers";
@@ -52,9 +51,7 @@ export default async function BillingPage({
 
         {sp.welcome && <Banner ok>Account created — add a card to start your 14-day free trial.</Banner>}
         {sp.checkout === "success" && <Banner ok>✓ Subscription started. Your 14-day trial is running.</Banner>}
-        {sp.google === "connected" && <Banner ok>✓ Google Calendar connected — Edison can now book real slots.</Banner>}
         {sp.error === "stripe_unconfigured" && <Banner>Stripe isn&apos;t configured yet (set STRIPE_SECRET_KEY).</Banner>}
-        {sp.error === "google_unconfigured" && <Banner>Google isn&apos;t configured yet (set GOOGLE_CLIENT_ID/SECRET).</Banner>}
 
         {/* status + usage */}
         <Card>
@@ -98,12 +95,7 @@ export default async function BillingPage({
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14.5 }}>Scheduling — built in ✓</div>
                 <div style={{ fontSize: 12.5, color: "var(--faint)", marginTop: 2, maxWidth: 460 }}>
-                  Edison books jobs into its own calendar from your business hours — no
-                  account to connect. See them under Calendar.
-                  {googleConfigured() && !calendarConnected && (
-                    <> Prefer Google? <a href="/api/google/connect" style={{ color: "var(--indigo)" }}>sync it (optional)</a>.</>
-                  )}
-                  {calendarConnected && <> Also synced to Google.</>}
+                  Edison books jobs into its own calendar from your business hours. See them under Calendar.
                 </div>
               </div>
               <Link
