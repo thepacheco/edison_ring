@@ -194,14 +194,18 @@ is merged into **`main`** (merge the open pull request on GitHub). Vercel deploy
    | `TWILIO_SKIP_SIGNATURE_VALIDATION` | `false` |
    | `STRIPE_SECRET_KEY` | Stripe (LIVE mode) → Developers → API keys (`sk_live_…`) |
    | `STRIPE_PUBLISHABLE_KEY` | Stripe (LIVE) → API keys (`pk_live_…`) |
-   | `STRIPE_WEBHOOK_SECRET` | you'll fill this in B6 (`whsec_…`) |
+   | `STRIPE_PRICE_FOUNDING` | Stripe → Product catalog → "Edison — Founding" → copy the **Price ID** (`price_…`) |
+   | `STRIPE_PRICE_STANDARD` | same, from "Edison — Standard" |
+   | `STRIPE_PRICE_HIGH_VOLUME` | same, from "Edison — High-volume" |
+   | `STRIPE_PRICE_OVERAGE` | the **usage-based/metered** $0.15 price — this is what makes billing grow with usage |
+   | `STRIPE_WEBHOOK_SECRET` | you'll fill this in B6 (`whsec_…`) — it does not exist until after the deploy |
+   | `RESEND_API_KEY` | the `re_…` key from Resend → API Keys (see B6.5 — NOT the `v=spf1…` DNS string) |
+   | `EMAIL_FROM` | `Edison <hello@edisonring.com>` |
+   | `CONTACT_EMAIL` | `hello@edisonring.com` |
    | `NEXTAUTH_SECRET` | long random text (run `openssl rand -base64 32`) |
    | `ADMIN_PASSWORD` | a password you choose (protects `/admin`) |
    | `CRON_SECRET` | any long random text |
-   | `APP_BASE_URL` | your Vercel URL (fill after first deploy, e.g. `https://edison-xxx.vercel.app`) |
-   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | *optional* — skip; Edison has its own calendar |
-   | `RESEND_API_KEY` / `EMAIL_FROM` | *optional* — for emails |
-   | `NEXT_PUBLIC_MAPBOX_TOKEN` | *optional* — for the locations map |
+   | `APP_BASE_URL` | `https://edisonring.com` once the domain is attached (Vercel URL until then) |
 
 4. Click **Deploy**. Wait ~2 minutes. You get a URL like
    `https://edison-xxx.vercel.app`.
@@ -231,8 +235,10 @@ In **Twilio Console → Phone Numbers → Active Numbers → click your number**
 **Toll-free texting (important):** if your number starts with `1-8xx`, open
 **Messaging → Regulatory Compliance → Toll-Free Verification** and submit it.
 Until it's approved, calls/forwarding work but **texts to customers are blocked**.
-(A local 10-digit number instead needs "A2P 10DLC" registration.) Start this
-early — approval takes days.
+When the form asks for **proof of consent / opt-in**, use
+`https://edisonring.com/sms-policy` — that page exists exactly for this, and
+describes the consumer-initiated opt-in model, STOP/HELP handling, and sample
+messages you can copy into the form.
 
 ## B6. Point Stripe at your live app
 
@@ -243,6 +249,27 @@ early — approval takes days.
    Vercel → `STRIPE_WEBHOOK_SECRET` → redeploy.
 
 This is what makes subscriptions auto-update in Edison.
+
+**Also flip on Stripe's free customer emails:** Stripe → **Settings → Emails** →
+enable trial-expiration and failed-payment emails. Zero code, keeps customers
+from being surprised.
+
+## B6.5. Email (Resend) — the two-step that confuses everyone
+
+Resend has **two different things** and mixing them up is the #1 stumble:
+
+1. **DNS records (prove you own the domain).** Resend → **Domains →
+   edisonring.com** shows a small table (a TXT like `v=spf1 include:amazonses…`,
+   an MX, a DKIM TXT). These are **not keys** — copy each row into your domain
+   registrar's **DNS settings** (IONOS → your domain → DNS → Add record: match
+   the Type, the Host/Name, and paste the Value). Wait for Resend to show
+   **Verified** (minutes–1 hour).
+2. **The API key (what the app actually uses).** Only after Verified: Resend →
+   **API Keys → Create** → copy the key starting with **`re_`** → that goes in
+   Vercel as `RESEND_API_KEY`.
+
+This one setup turns on all five emails: welcome, password reset, weekly report,
+contact form, and the 🔥 lead-needs-you alerts.
 
 ## B7. Go-live test (do this before any real customer)
 
