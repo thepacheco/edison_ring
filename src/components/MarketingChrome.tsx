@@ -114,6 +114,7 @@ export function Footer() {
           { href: "/contact", label: "Contact" },
           { href: "/terms", label: "Terms" },
           { href: "/privacy", label: "Privacy" },
+          { href: "/sms-policy", label: "SMS Policy" },
         ]} />
       </div>
       <div
