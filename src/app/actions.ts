@@ -38,6 +38,9 @@ export async function signupAction(formData: FormData) {
   if (password.length < 8) {
     redirect("/signup?error=weak_password");
   }
+  if (password !== String(formData.get("confirm") || "")) {
+    redirect("/signup?error=mismatch");
+  }
 
   const existingBiz = await prisma.business.findUnique({ where: { ownerEmail: email } });
   const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -284,6 +287,9 @@ export async function resetPasswordAction(formData: FormData) {
   const token = String(formData.get("token") || "");
   const next = String(formData.get("password") || "");
   if (next.length < 8) redirect(`/reset?token=${token}&error=weak`);
+  if (next !== String(formData.get("confirm") || "")) {
+    redirect(`/reset?token=${token}&error=mismatch`);
+  }
   const rec = await prisma.passwordResetToken.findUnique({
     where: { tokenHash: hashResetToken(token) },
   });
@@ -493,7 +499,7 @@ export async function startCheckoutAction(formData: FormData) {
   const owner = await requireOwner();
   if (!owner) redirect("/billing?error=forbidden");
   const business = owner.business;
-  const { stripe, stripeConfigured, priceIdFor } = await import("@/lib/stripe");
+  const { stripe, stripeConfigured, priceIdFor, overagePriceId } = await import("@/lib/stripe");
   const { planFor, TRIAL_DAYS } = await import("@/lib/pricing");
 
   if (!stripeConfigured()) redirect("/billing?error=stripe_unconfigured");
@@ -529,10 +535,15 @@ export async function startCheckoutAction(formData: FormData) {
         quantity: 1,
       };
 
+  // Attach the metered overage price so the monthly cron can report usage
+  // against it — without this item on the subscription, overage never bills.
+  const overage = overagePriceId();
+  const lineItems = overage ? [lineItem, { price: overage }] : [lineItem];
+
   const session = await stripe().checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
-    line_items: [lineItem],
+    line_items: lineItems,
     subscription_data: {
       trial_period_days: TRIAL_DAYS,
       metadata: { businessId: business!.id, plan: plan.id },

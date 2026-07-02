@@ -218,7 +218,7 @@ export default async function DashboardPage({
             flexWrap: "wrap",
           }}
         >
-          <StatCard label="Conversations">
+          <StatCard label="Conversations" tip="Missed-call leads Edison handled this month, against your plan's included amount. Past the limit, extra conversations bill at a small per-conversation rate.">
             <span className="mono" style={{ fontWeight: 700, fontSize: 22 }}>
               {d.conversationsUsed}
               <span style={{ color: "#aeb4c0", fontSize: 15 }}>
@@ -245,12 +245,12 @@ export default async function DashboardPage({
               />
             </div>
           </StatCard>
-          <StatCard label="Booked jobs">
+          <StatCard label="Booked jobs" tip="Leads Edison converted into a scheduled appointment this month.">
             <span className="mono" style={{ fontWeight: 700, fontSize: 22 }}>
               {d.jobsBooked}
             </span>
           </StatCard>
-          <StatCard label="Needs follow-up">
+          <StatCard label="Needs follow-up" tip="Leads waiting on a human — call or text them from your phone, then mark them contacted.">
             <span
               className="mono"
               style={{ fontWeight: 700, fontSize: 22, color: "var(--amber)" }}
@@ -258,7 +258,7 @@ export default async function DashboardPage({
               {d.needsFollowup}
             </span>
           </StatCard>
-          <StatCard label="Return on cost">
+          <StatCard label="Return on cost" tip="Money recovered this month divided by what Edison costs you.">
             <span
               className="mono"
               style={{ fontWeight: 700, fontSize: 22, color: "var(--green)" }}
@@ -266,7 +266,7 @@ export default async function DashboardPage({
               {d.returnMultiple}×
             </span>
           </StatCard>
-          <StatCard label="Avg ticket">
+          <StatCard label="Avg ticket" tip="Your average job value (set in Settings). Used to estimate recovered revenue when a job has no exact price.">
             <span className="mono" style={{ fontWeight: 700, fontSize: 22 }}>
               ${d.avgTicket}
             </span>
@@ -485,16 +485,18 @@ function Legend({ color, label }: { color: string; label: string }) {
   );
 }
 
-function StatCard({ label, children }: { label: string; children: React.ReactNode }) {
+function StatCard({ label, tip, children }: { label: string; tip?: string; children: React.ReactNode }) {
   return (
     <div
       className="lift"
+      title={tip}
       style={{
         flex: "1 1 140px",
         background: "var(--card)",
         border: "1px solid var(--line)",
         borderRadius: 14,
         padding: "16px 18px",
+        cursor: tip ? "help" : undefined,
       }}
     >
       <div
@@ -503,9 +505,17 @@ function StatCard({ label, children }: { label: string; children: React.ReactNod
           color: "var(--faint)",
           fontWeight: 600,
           marginBottom: 5,
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
         }}
       >
         {label}
+        {tip && (
+          <span aria-hidden style={{ fontSize: 10, color: "var(--line)", border: "1px solid var(--line)", borderRadius: "50%", width: 13, height: 13, display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>
+            ?
+          </span>
+        )}
       </div>
       {children}
     </div>

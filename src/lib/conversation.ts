@@ -302,6 +302,28 @@ export async function advanceConversation(
     } catch (err) {
       console.error("Failed to send SMS reply:", err);
     }
+
+    // Alert the owner the moment a lead needs a human — this is the money
+    // moment; it must not sit silently on the dashboard. Best-effort email.
+    if (escalate) {
+      try {
+        const { emailConfigured, sendEmail } = await import("./email");
+        if (emailConfigured()) {
+          const base = process.env.APP_BASE_URL || "http://localhost:3000";
+          const who = ai.customerName || conversation.customerPhone;
+          await sendEmail({
+            to: business.ownerEmail,
+            subject: `🔥 Lead needs you: ${who} — ${ai.customerNeed || "call back"}`,
+            html: `<p><b>${who}</b> (${conversation.customerPhone}) needs a human:</p>
+<p style="font-size:15px"><b>${(ai.customerNeed || "See the conversation").replace(/</g, "&lt;")}</b></p>
+<p>Edison told them someone from the team will call back. Sooner is better — call or text them from your phone.</p>
+<p><a href="${base}/conversations/${conversation.id}">Open the conversation →</a></p>`,
+          });
+        }
+      } catch (err) {
+        console.error("lead alert email failed:", err);
+      }
+    }
   }
 }
 
